@@ -15,7 +15,7 @@
 
 - Windows 10+
 - Visual Studio 2022 — Desktop development with C++
-- DirectX SDK (June 2010) — engine uses d3dx9; **or** run `.\scripts\setup-dxsdk.ps1` for a repo-local copy under `third_party/dxsdk/` (no admin). `Directory.Build.props` picks vendor copy first, then legacy Program Files install.
+- DirectX SDK (June 2010) — engine uses d3dx9; **or** run `.\scripts\setup-dxsdk.ps1` for a repo-local copy under `third_party/dxsdk/` (no admin). `Directory.Build.props` picks vendor copy first, then legacy Program Files install. CI `release.yml` runs `setup-dxsdk.ps1` before build. `build.ps1` also auto-runs it if `d3dx9.h`/`d3dx9.lib` are missing.
 - Go 1.21+ — optional, builds `multiplayer-server.exe`
 - Administrator at runtime **not** required
 

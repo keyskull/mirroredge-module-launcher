@@ -105,12 +105,14 @@ function Find-Go {
 
 function Test-DxSdkAvailable {
     $vendorInclude = Join-Path $Root "third_party\dxsdk\include\d3dx9.h"
-    if (Test-Path $vendorInclude) {
+    $vendorLib = Join-Path $Root "third_party\dxsdk\lib\x86\d3dx9.lib"
+    if ((Test-Path $vendorInclude) -and (Test-Path $vendorLib)) {
         return $true
     }
 
     $legacyInclude = "C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Include\d3dx9.h"
-    if (Test-Path $legacyInclude) {
+    $legacyLib = "C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x86\d3dx9.lib"
+    if ((Test-Path $legacyInclude) -and (Test-Path $legacyLib)) {
         return $true
     }
 
@@ -122,13 +124,22 @@ function Assert-DxSdkAvailable {
         return
     }
 
+    $setup = Join-Path $Root "scripts\setup-dxsdk.ps1"
+    if (Test-Path $setup) {
+        Write-Host "D3DX headers/libs missing; running scripts\setup-dxsdk.ps1..." -ForegroundColor Yellow
+        & $setup
+        if (Test-DxSdkAvailable) {
+            return
+        }
+    }
+
     Write-Host ""
-    Write-Host "DirectX SDK (D3DX) headers were not found." -ForegroundColor Red
+    Write-Host "DirectX SDK (D3DX) headers/libs were not found." -ForegroundColor Red
     Write-Host "Install one of:" -ForegroundColor Yellow
     Write-Host "  .\scripts\setup-dxsdk.ps1   (repo-local NuGet copy, no admin)"
     Write-Host "  Legacy June 2010 DirectX SDK under Program Files (x86)"
     Write-Host ""
-    throw "D3DX headers not found."
+    throw "D3DX headers/libs not found."
 }
 
 function Resolve-DeploySettings {

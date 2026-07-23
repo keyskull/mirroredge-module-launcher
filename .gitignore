@@ -15,7 +15,9 @@ test-environments.local.json
 [Rr]elease/
 [Dd]ebug/
 x64/
-x86/
+# VS platform output dir — do not swallow third_party/dxsdk/lib/x86
+/x86/
+**/Win32/x86/
 *.user
 *.suo
 *.VC.db
@@ -25,6 +27,7 @@ x86/
 *.ilk
 *.exp
 *.lib
+!third_party/dxsdk/lib/x86/
 !third_party/dxsdk/lib/x86/*.lib
 
 # Built server / helper binaries (rebuild locally)
