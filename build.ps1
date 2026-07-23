@@ -261,7 +261,7 @@ function Invoke-Deploy {
     $deployDistManager = Join-Path $deployDist "modules\module_manager"
     New-Item -ItemType Directory -Force -Path $deployDistManager | Out-Null
 
-    foreach ($launcherName in @("ModuleLauncher.exe", "mirroredge-module-launcher.exe")) {
+    foreach ($launcherName in @("ModuleLauncher.exe")) {
         $launcherTarget = Join-Path $DeployRoot $launcherName
         try {
             Copy-Item $Exe $launcherTarget -Force
@@ -356,6 +356,8 @@ function Invoke-Deploy {
         (Join-Path $deployManager "imgui.dll"),
         (Join-Path $deployModules "Client.dll"),
         (Join-Path $DeployRoot "PlayWithMod.bat"),
+        (Join-Path $DeployRoot "ModuleLauncher.bat"),
+        (Join-Path $DeployRoot "mirroredge-module-launcher.exe"),
         (Join-Path $binariesDir "ModuleLauncher.exe"),
         (Join-Path $binariesDir "mirroredge-module-launcher.exe")
     )) {
@@ -364,14 +366,6 @@ function Invoke-Deploy {
             Write-Host "==> Removed stale: $stale" -ForegroundColor DarkGray
         }
     }
-
-    $launcherBat = Join-Path $DeployRoot "ModuleLauncher.bat"
-    @'
-@echo off
-setlocal EnableExtensions
-cd /d "%~dp0"
-start "" "%~dp0ModuleLauncher.exe"
-'@ | Set-Content -Path $launcherBat -Encoding ASCII
 
     if ($CopyProxy) {
         $binariesDir = Resolve-BinariesDirectory -DeployRoot $DeployRoot
@@ -385,18 +379,17 @@ start "" "%~dp0ModuleLauncher.exe"
         Write-Host "==> Disabled d3d9 proxy in Binaries (inject mode)." -ForegroundColor Yellow
     }
 
+    $physxSrc = Join-Path $Root "physx"
+    if (Test-Path $physxSrc) {
+        $physxDst = Join-Path $DeployRoot "physx"
+        New-Item -ItemType Directory -Force -Path $physxDst | Out-Null
+        Copy-Item (Join-Path $physxSrc "*") $physxDst -Recurse -Force
+    }
+
     Write-Host "==> Deployed to: $DeployRoot" -ForegroundColor Yellow
-    Write-Host "    ModuleLauncher.bat  (recommended entry point)" -ForegroundColor DarkGray
     Write-Host "    ModuleLauncher.exe" -ForegroundColor DarkGray
     Write-Host "    settings.json" -ForegroundColor DarkGray
-    Write-Host "    modules\core\core.dll" -ForegroundColor DarkGray
-    Write-Host "    modules\engine\engine.dll" -ForegroundColor DarkGray
-    Write-Host "    modules\core.config.json (legacy)" -ForegroundColor DarkGray
-    Write-Host "    modules\mm-console\mm-console.dll" -ForegroundColor DarkGray
-    Write-Host "    modules\multiplayer\multiplayer.dll" -ForegroundColor DarkGray
-    Write-Host "    modules\trainer\trainer.dll" -ForegroundColor DarkGray
-    Write-Host "    modules\dolly\dolly.dll" -ForegroundColor DarkGray
-    Write-Host "    modules\module_manager\module_manager.dll" -ForegroundColor DarkGray
+    Write-Host "    modules\..." -ForegroundColor DarkGray
     Write-Host "    dist\d3d9.dll" -ForegroundColor DarkGray
 }
 
@@ -506,7 +499,6 @@ foreach ($required in @($coreDll, $engineDll, $consoleDll, $multiplayerDll, $tra
     }
 }
 
-Copy-Item $exe (Join-Path $Dist "mirroredge-module-launcher.exe") -Force
 $settingsJson = Join-Path $Root "settings.json"
 if (Test-Path $settingsJson) {
     Copy-Item $settingsJson (Join-Path $Dist "settings.json") -Force
@@ -522,6 +514,25 @@ if (Test-Path $changelog) {
 $coreConfig = Join-Path $Root "runtime\core\core.config.json"
 if (Test-Path $coreConfig) {
     Copy-Item $coreConfig (Join-Path $ModulesDist "core.config.json") -Force
+}
+$physxRoot = Join-Path $Root "physx"
+if (Test-Path $physxRoot) {
+    $physxDist = Join-Path $Dist "physx"
+    New-Item -ItemType Directory -Force -Path $physxDist | Out-Null
+    Copy-Item (Join-Path $physxRoot "*") $physxDist -Recurse -Force
+}
+
+# MSVC may drop .exp/.lib/.pdb next to module DLLs and under dist\; strip them so
+# launcher sync / release packs never ship non-runtime artifacts.
+Get-ChildItem $Dist -Recurse -Include *.exp,*.lib,*.pdb,*.ilk,*.iobj,*.ipdb -ErrorAction SilentlyContinue |
+    Remove-Item -Force -ErrorAction SilentlyContinue
+foreach ($stale in @(
+        (Join-Path $Dist "mirroredge-module-launcher.exe"),
+        (Join-Path $Dist "ModuleLauncher.bat")
+    )) {
+    if (Test-Path $stale) {
+        Remove-Item $stale -Force -ErrorAction SilentlyContinue
+    }
 }
 
 Write-Host "==> Output:" -ForegroundColor Green

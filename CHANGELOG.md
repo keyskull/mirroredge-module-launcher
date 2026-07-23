@@ -6,6 +6,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Version numbers follow [Semantic Versioning](https://semver.org/).  
 Authoritative version: [`version.json`](version.json) (synced to `shared/product_version.h` at build).
 
+## [1.2.12] - 2026-07-23
+
+### Added
+
+- **Launcher Patch / modules sync** - Update tab: detect modules vs game, update modules, Patch (`modules\` + `d3d9`), Fix PhysX (overlay from `physx\` with `.mmphysx.bak`). Launch prep now syncs the full modules tree.
+- **`physx/` pack convention** - optional overlay directory documented in `physx/README.md` (DLLs not shipped in-repo).
+
+### Changed
+
+- **Release zip** - runtime-only pack (no `.pdb`/`.exp`/`.lib`, no `ModuleLauncher.bat` / alias exe). `physx\` included only when it contains DLLs.
+- **Build/deploy** - no longer creates `mirroredge-module-launcher.exe` or `ModuleLauncher.bat`; strips MSVC side-products from `dist/`.
+
+### Fixed
+
+- **Modules sync Bad Image** - do not `LoadLibrary` non-DLL build artifacts (e.g. `core.exp` → `0xc000012f`).
+
 ## [1.2.11] - 2026-07-23
 
 ### Added

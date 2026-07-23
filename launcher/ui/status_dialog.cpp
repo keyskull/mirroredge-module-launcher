@@ -1,10 +1,12 @@
 #include "stdafx.h"
 
 #include "game_config.h"
+#include "game_patch.h"
 #include "game_path.h"
 #include "input_restore.h"
 #include "launcher_settings.h"
 #include "launcher_i18n.h"
+#include "paths.h"
 #include "product_version.h"
 #include "update_check.h"
 #include "window_layout_settings.h"
@@ -45,6 +47,11 @@ enum ControlId : int {
 	kConfigSyncStatus = 1026,
 	kApplyConfig = 1027,
 	kDeployStatus = 1028,
+	kModulesStatus = 1029,
+	kDetectModules = 1030,
+	kUpdateModules = 1031,
+	kPatchDependencies = 1032,
+	kFixPhysX = 1033,
 };
 
 enum : UINT {
@@ -79,6 +86,11 @@ HWND g_skipConfigIntegrity = nullptr;
 HWND g_updateStatus = nullptr;
 HWND g_checkUpdate = nullptr;
 HWND g_upgradeNow = nullptr;
+HWND g_modulesStatus = nullptr;
+HWND g_detectModules = nullptr;
+HWND g_updateModules = nullptr;
+HWND g_patchDependencies = nullptr;
+HWND g_fixPhysX = nullptr;
 HWND g_languageLabel = nullptr;
 HWND g_language = nullptr;
 HWND g_tabs = nullptr;
@@ -778,6 +790,25 @@ void RefreshConfigSyncStatus() {
 	}
 }
 
+void RefreshModulesSyncStatus(bool logDetails) {
+	if (!g_modulesStatus) {
+		return;
+	}
+
+	std::wstring gameRoot;
+	if (!Paths::GetGameRootDirectory(gameRoot)) {
+		SetWindowTextW(g_modulesStatus,
+		               LauncherI18n::T(LauncherI18n::Str::ModulesNoGame));
+		return;
+	}
+
+	const auto status = GamePatch::EvaluateModulesSync(gameRoot);
+	SetWindowTextW(g_modulesStatus, status.summary.c_str());
+	if (logDetails) {
+		AppendLogLine(status.summary.c_str());
+	}
+}
+
 void ShowTabPage(int index) {
 	const HWND launchControls[] = {
 	    g_gamePathLabel, g_gamePath, g_browseGamePath, g_skipStartup,
@@ -789,7 +820,8 @@ void ShowTabPage(int index) {
 	    g_scaleValue,      g_configSyncStatus, g_applyConfig,
 	};
 	const HWND updateControls[] = {
-	    g_updateStatus, g_checkUpdate, g_upgradeNow,
+	    g_updateStatus, g_checkUpdate, g_upgradeNow, g_modulesStatus,
+	    g_detectModules, g_updateModules, g_patchDependencies, g_fixPhysX,
 	};
 
 	SetControlsVisible(launchControls, _countof(launchControls), index == 0);
@@ -803,6 +835,9 @@ void ShowTabPage(int index) {
 		UpdateResolutionFieldsEnabled();
 	}
 	RefreshConfigSyncStatus();
+	if (index == 2) {
+		RefreshModulesSyncStatus(false);
+	}
 }
 
 void RefreshTabTitles() {
@@ -872,6 +907,28 @@ void ApplyLocalizedUi() {
 	}
 	if (g_upgradeNow) {
 		SetWindowTextW(g_upgradeNow, LauncherI18n::T(LauncherI18n::Str::UpgradeNow));
+	}
+	if (g_modulesStatus) {
+		const int len = GetWindowTextLengthW(g_modulesStatus);
+		if (len <= 0) {
+			SetWindowTextW(g_modulesStatus,
+			               LauncherI18n::T(LauncherI18n::Str::ModulesStatusUnchecked));
+		}
+	}
+	if (g_detectModules) {
+		SetWindowTextW(g_detectModules,
+		               LauncherI18n::T(LauncherI18n::Str::DetectModules));
+	}
+	if (g_updateModules) {
+		SetWindowTextW(g_updateModules,
+		               LauncherI18n::T(LauncherI18n::Str::UpdateModules));
+	}
+	if (g_patchDependencies) {
+		SetWindowTextW(g_patchDependencies,
+		               LauncherI18n::T(LauncherI18n::Str::PatchDependencies));
+	}
+	if (g_fixPhysX) {
+		SetWindowTextW(g_fixPhysX, LauncherI18n::T(LauncherI18n::Str::FixPhysX));
 	}
 	if (g_launch) {
 		SetWindowTextW(g_launch, LauncherI18n::T(LauncherI18n::Str::LaunchGame));
@@ -1102,6 +1159,33 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam,
 			BeginUpgrade();
 			return 0;
 		}
+		if (LOWORD(wparam) == kDetectModules) {
+			RefreshModulesSyncStatus(true);
+			return 0;
+		}
+		if (LOWORD(wparam) == kUpdateModules) {
+			std::wstring gameRoot;
+			if (!Paths::GetGameRootDirectory(gameRoot)) {
+				AppendLogLine(LauncherI18n::T(LauncherI18n::Str::ModulesNoGame));
+				return 0;
+			}
+			if (GamePatch::PatchModulesToGame(gameRoot)) {
+				RefreshModulesSyncStatus(true);
+				RefreshConfigSyncStatus();
+			}
+			return 0;
+		}
+		if (LOWORD(wparam) == kPatchDependencies) {
+			if (GamePatch::PatchDependenciesToGame()) {
+				RefreshModulesSyncStatus(true);
+				RefreshConfigSyncStatus();
+			}
+			return 0;
+		}
+		if (LOWORD(wparam) == kFixPhysX) {
+			GamePatch::PatchPhysXToGame();
+			return 0;
+		}
 		if (LOWORD(wparam) == kLanguage && HIWORD(wparam) == CBN_SELCHANGE) {
 			const auto sel =
 			    static_cast<int>(SendMessageW(g_language, CB_GETCURSEL, 0, 0));
@@ -1215,7 +1299,7 @@ void Create() {
 	    WS_EX_APPWINDOW, className,
 	    windowTitle,
 	    WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT,
-	    CW_USEDEFAULT, 640, 560, nullptr, nullptr, instance, nullptr);
+	    CW_USEDEFAULT, 640, 600, nullptr, nullptr, instance, nullptr);
 
 	if (!g_window) {
 		MessageBoxW(nullptr, LauncherI18n::T(LauncherI18n::Str::CreateWindowFailed),
@@ -1250,7 +1334,7 @@ void Create() {
 	const int tabX = 12;
 	const int tabY = 42;
 	const int tabW = 600;
-	const int tabH = 180;
+	const int tabH = 220;
 
 	g_tabs = CreateWindowExW(
 	    0, WC_TABCONTROLW, L"",
@@ -1377,6 +1461,31 @@ void Create() {
 	    reinterpret_cast<HMENU>(kUpgradeNow), instance, nullptr);
 	EnableWindow(g_upgradeNow, FALSE);
 
+	g_modulesStatus = CreateWindowExW(
+	    0, L"STATIC", LauncherI18n::T(LauncherI18n::Str::ModulesStatusUnchecked),
+	    WS_CHILD | SS_LEFT, cx, cy + 66, cw, 22, g_window,
+	    reinterpret_cast<HMENU>(kModulesStatus), instance, nullptr);
+
+	g_detectModules = CreateWindowExW(
+	    0, L"BUTTON", LauncherI18n::T(LauncherI18n::Str::DetectModules),
+	    WS_CHILD | BS_PUSHBUTTON, cx, cy + 92, 120, 28, g_window,
+	    reinterpret_cast<HMENU>(kDetectModules), instance, nullptr);
+
+	g_updateModules = CreateWindowExW(
+	    0, L"BUTTON", LauncherI18n::T(LauncherI18n::Str::UpdateModules),
+	    WS_CHILD | BS_PUSHBUTTON, cx + 128, cy + 92, 120, 28, g_window,
+	    reinterpret_cast<HMENU>(kUpdateModules), instance, nullptr);
+
+	g_patchDependencies = CreateWindowExW(
+	    0, L"BUTTON", LauncherI18n::T(LauncherI18n::Str::PatchDependencies),
+	    WS_CHILD | BS_PUSHBUTTON, cx + 256, cy + 92, 100, 28, g_window,
+	    reinterpret_cast<HMENU>(kPatchDependencies), instance, nullptr);
+
+	g_fixPhysX = CreateWindowExW(
+	    0, L"BUTTON", LauncherI18n::T(LauncherI18n::Str::FixPhysX),
+	    WS_CHILD | BS_PUSHBUTTON, cx + 364, cy + 92, 110, 28, g_window,
+	    reinterpret_cast<HMENU>(kFixPhysX), instance, nullptr);
+
 	const int logY = tabY + tabH + 10;
 	g_log = CreateWindowExW(
 	    WS_EX_CLIENTEDGE, L"EDIT", L"",
@@ -1437,6 +1546,15 @@ void Create() {
 	             TRUE);
 	SendMessageW(g_upgradeNow, WM_SETFONT, reinterpret_cast<WPARAM>(g_font),
 	             TRUE);
+	SendMessageW(g_modulesStatus, WM_SETFONT, reinterpret_cast<WPARAM>(g_font),
+	             TRUE);
+	SendMessageW(g_detectModules, WM_SETFONT, reinterpret_cast<WPARAM>(g_font),
+	             TRUE);
+	SendMessageW(g_updateModules, WM_SETFONT, reinterpret_cast<WPARAM>(g_font),
+	             TRUE);
+	SendMessageW(g_patchDependencies, WM_SETFONT, reinterpret_cast<WPARAM>(g_font),
+	             TRUE);
+	SendMessageW(g_fixPhysX, WM_SETFONT, reinterpret_cast<WPARAM>(g_font), TRUE);
 	SendMessageW(g_log, WM_SETFONT, reinterpret_cast<WPARAM>(g_font), TRUE);
 	SendMessageW(g_close, WM_SETFONT, reinterpret_cast<WPARAM>(g_font), TRUE);
 	SendMessageW(g_launch, WM_SETFONT, reinterpret_cast<WPARAM>(g_font), TRUE);

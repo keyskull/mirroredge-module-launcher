@@ -46,7 +46,8 @@ ModuleLauncher checks GitHub **Latest Release** on startup and via **检查更�
 - Zip root matches deploy root (`ModuleLauncher.exe`, `modules\`, `d3d9.dll`, …)
 - User clicks **立即升级** → download → extract → exit → bat replaces files → relaunch
 - Settings: `launcher.skipUpdateCheck`, `launcher.dismissedUpdateVersion`, `launcher.uiLanguage` (`zh`/`en`) in `settings.json`
-- Launcher UI tabs: Launch (path/options + d3d9/module_manager deploy status), Display (mode/resolution/scale + config sync status / Apply config), Update (check/upgrade); status, language, log, and action buttons stay always visible
+- Launcher UI tabs: Launch (path/options + d3d9/module_manager deploy status), Display (mode/resolution/scale + config sync status / Apply config), Update (GitHub check/upgrade + **modules detect/update**, **Patch** dependencies, **Fix PhysX**); status, language, log, and action buttons stay always visible
+- **Patch** copies launcher-local `modules\` + `d3d9.dll` into the game root / `Binaries` (no launcher alias/bat). **Update modules** copies only `modules\` (+ `VERSION.json`). **Fix PhysX** overlays `physx\` onto `Binaries\` (see [`physx/README.md`](../physx/README.md)).
 - Trust model: GitHub Release channel only (no code signing in v1)
 
 Pack locally after build:
@@ -55,6 +56,8 @@ Pack locally after build:
 .\build.ps1 -NoDeploy
 .\tools\pack-release.ps1
 ```
+
+The zip contains runtime files only (`ModuleLauncher.exe`, `modules\*.dll`, `d3d9.dll`, `settings.json`, `VERSION.json`, `CHANGELOG.md`). It excludes MSVC side-products (`.pdb` / `.exp` / `.lib`), `ModuleLauncher.bat`, and `mirroredge-module-launcher.exe`. `physx\` is included only when it contains DLLs.
 
 Publish: push tag `v*` (workflow [`.github/workflows/release.yml`](../.github/workflows/release.yml) builds, packs, uploads the zip).
 
@@ -74,26 +77,26 @@ Publish: push tag `v*` (workflow [`.github/workflows/release.yml`](../.github/wo
    - `dist/modules/core/core.dll`
    - `dist/modules/engine/engine.dll`
    - `dist/d3d9.dll`
-6. **Copy metadata:** `dist/VERSION.json`, `dist/CHANGELOG.md`, `dist/settings.json`
-7. **Alias:** `dist/mirroredge-module-launcher.exe`
-8. **Deploy** (`Invoke-Deploy`) unless `-NoDeploy` — wipes `<deployPath>/modules/` and `<deployPath>/dist/modules/` first, then copies current build outputs only (no leftover `mp-*` / legacy folders). If `ModuleLauncher.exe` is still locked, deployment warns and continues copying module DLLs.
+6. **Copy metadata:** `dist/VERSION.json`, `dist/CHANGELOG.md`, `dist/settings.json`; copy `physx\` into `dist\physx\` when present
+7. **Deploy** (`Invoke-Deploy`) unless `-NoDeploy` — wipes `<deployPath>/modules/` and `<deployPath>/dist/modules/` first, then copies current build outputs only (no leftover `mp-*` / legacy folders). Deploys `ModuleLauncher.exe` + modules + d3d9; does **not** create `mirroredge-module-launcher.exe` or `ModuleLauncher.bat`. If `ModuleLauncher.exe` is still locked, deployment warns and continues copying module DLLs.
 
 ## Deploy layout
 
 ```
 <deployPath>/
   ModuleLauncher.exe
-  mirroredge-module-launcher.exe
-  ModuleLauncher.bat              # Starts ModuleLauncher.exe (no elevation)
+  settings.json
+  VERSION.json / CHANGELOG.md
   modules/module_manager/module_manager.dll
   modules/core/core.dll
   modules/engine/engine.dll
-  dist/modules/module_manager/module_manager.dll   # mirror copy
-  dist/modules/core/core.dll                 # mirror copy
-  dist/modules/engine/engine.dll             # mirror copy
+  dist/modules/...                      # mirror copy
   dist/d3d9.dll
-  multiplayer-server.exe       # if Go built (under modules/multiplayer or game root)
+  physx/...                             # optional PhysX overlay pack
+  multiplayer-server.exe                # if Go built (under modules/multiplayer or game root)
 ```
+
+`PrepareGameEnvironment()` / Update-tab **Patch** sync the full `modules\` tree and `Binaries\d3d9.dll` (not only `module_manager`).
 
 ### Proxy deploy
 
@@ -122,7 +125,6 @@ Copy from `deploy.config.json.example`:
 | File | Description |
 |------|-------------|
 | `dist/ModuleLauncher.exe` | Primary launcher |
-| `dist/mirroredge-module-launcher.exe` | Alias copy |
 | `dist/modules/module_manager/module_manager.dll` | Overlay host (split mode) |
 | `dist/modules/core/core.dll` | Core plugin shell |
 | `dist/modules/engine/engine.dll` | Gameplay engine |
@@ -148,7 +150,7 @@ All **Win32 / x86**. Mod project `OutDir` should be `$(SolutionDir)dist\modules\
 
 ## Runtime entry
 
-Users run `ModuleLauncher.bat` or `ModuleLauncher.exe` in the game folder. CLI auto mode:
+Users run `ModuleLauncher.exe` in the game folder (or from `dist/`). CLI auto mode:
 
 ```powershell
 Start-Process ".\ModuleLauncher.exe" -ArgumentList "/auto" -Wait

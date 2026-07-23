@@ -54,12 +54,13 @@ See [module-manager.md](module-manager.md) for the verified workflow.
 | `game_path.cpp` | `GamePath::ResolveGameRoot`, `AutoDetectGameRoot` | Steam/EA/common-path detection; `<gameRoot>\settings.json` (`launcher.gameRoot`) |
 | `launcher_settings.cpp` | `LauncherSettings::LoadDisplaySettings` | Reads/writes `settings.json` (`launcher.*`) via `shared/deploy_settings.cpp` |
 | `game_config.cpp` | `GameConfig::ApplyDisplaySettings` | Sync `TdEngine.ini` + `module_manager.settings.ini` on launch. Borderless: window from `Scale` × monitor; render from preset or match-window (`RenderMatchWindow`) |
-| `game_launch.cpp` | `PrepareGameEnvironment`, `LaunchGameExecutable` | Proxy deploy; apply display; `-nomoviestartup`; start game |
+| `game_launch.cpp` | `PrepareGameEnvironment`, `LaunchGameExecutable` | Full modules + proxy patch via `game_patch`; apply display; start game |
+| `game_patch.cpp` | `EvaluateModulesSync`, `PatchModulesToGame`, `PatchDependenciesToGame`, `PatchPhysXToGame` | Modules version detect; Patch deps; PhysX overlay |
 | `config_integrity_bypass.cpp` | `ConfigIntegrityBypass::BeginWatching`, `TryApplyToProcess` | In-memory bypass for `Default*.ini` integrity checks in `MirrorsEdge.exe` |
 | `injection_flow.cpp` | `RunLauncherFlow`, `WaitForManagerViaProxy` | Wait for proxy-loaded manager |
 | `process_util.cpp` | `FindProcessByName`, `HasLoadedModuleByPid` | Process/module introspection (no elevation) |
 | `log_server.cpp` | `LogServer::Start` | Named-pipe server for mod logs |
-| `ui/status_dialog.cpp` | `StatusDialog::*` | Win32 status window |
+| `ui/status_dialog.cpp` | `StatusDialog::*` | Win32 status window (Launch / Display / Update+Patch) |
 
 Launcher core is **mod-agnostic** — only `config.h` defaults reference `module_manager` / `core`.
 

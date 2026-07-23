@@ -177,6 +177,7 @@
     <ClCompile Include="launcher\game_path.cpp" />
 
     <ClCompile Include="launcher\game_launch.cpp" />
+    <ClCompile Include="launcher\game_patch.cpp" />
 
     <ClCompile Include="launcher\input_restore.cpp" />
 

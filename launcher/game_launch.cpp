@@ -4,12 +4,12 @@
 #include "config.h"
 #include "game_config.h"
 #include "game_launch.h"
+#include "game_patch.h"
 #include "game_path.h"
 #include "input_restore.h"
 #include "launcher_settings.h"
 #include "config_integrity_bypass.h"
 #include "diagnostics_session.h"
-#include "module_contract.h"
 #include "paths.h"
 #include "product_version.h"
 #include "process_util.h"
@@ -39,119 +39,6 @@ static std::wstring FormatWin32Error(DWORD error) {
 		message.pop_back();
 	}
 	return message;
-}
-
-static bool BackupAndCopyFile(const std::wstring &sourcePath,
-                              const std::wstring &destinationPath,
-                              const std::wstring &backupPath) {
-	if (PathFileExistsW(destinationPath.c_str())) {
-		if (PathFileExistsW(backupPath.c_str())) {
-			DeleteFileW(backupPath.c_str());
-		}
-		if (!MoveFileW(destinationPath.c_str(), backupPath.c_str())) {
-			return false;
-		}
-	}
-
-	return CopyFileW(sourcePath.c_str(), destinationPath.c_str(), FALSE) != FALSE;
-}
-
-static bool ArePathsEquivalent(const std::wstring &left,
-                               const std::wstring &right) {
-	return _wcsicmp(left.c_str(), right.c_str()) == 0;
-}
-
-static bool GetFileSizeBytes(const std::wstring &path, ULONGLONG &size) {
-	WIN32_FILE_ATTRIBUTE_DATA data = {};
-	if (!GetFileAttributesExW(path.c_str(), GetFileExInfoStandard, &data)) {
-		return false;
-	}
-
-	ULARGE_INTEGER value = {};
-	value.LowPart = data.nFileSizeLow;
-	value.HighPart = data.nFileSizeHigh;
-	size = value.QuadPart;
-	return true;
-}
-
-static bool DeployManagerDependency(const std::wstring &gameBinariesDirectory) {
-	std::wstring managerSource;
-	if (!Paths::ResolveManagerDll(managerSource)) {
-		StatusDialog::AppendLog(
-		    LauncherI18n::T(LauncherI18n::Str::WarnNoManagerDll));
-		return false;
-	}
-
-	wchar_t gameRoot[MAX_PATH] = {};
-	wcscpy(gameRoot, gameBinariesDirectory.c_str());
-	if (!PathRemoveFileSpecW(gameRoot)) {
-		return false;
-	}
-
-	const auto modulesDir = std::wstring(gameRoot) + L"\\modules";
-	const auto managerDir = modulesDir + L"\\module_manager";
-	CreateDirectoryW(modulesDir.c_str(), nullptr);
-	CreateDirectoryW(managerDir.c_str(), nullptr);
-
-	const auto destinationPath =
-	    managerDir + L"\\" + MMOD_MANAGER_DLL_FILENAME;
-	if (ArePathsEquivalent(managerSource, destinationPath)) {
-		return true;
-	}
-
-	if (CopyFileW(managerSource.c_str(), destinationPath.c_str(), FALSE)) {
-		StatusDialog::AppendLogf(
-		    LauncherI18n::T(LauncherI18n::Str::DeployedManagerFmt),
-		    destinationPath.c_str());
-		return true;
-	}
-
-	const DWORD error = GetLastError();
-	if (error == ERROR_SHARING_VIOLATION &&
-	    PathFileExistsW(destinationPath.c_str())) {
-		ULONGLONG sourceSize = 0;
-		ULONGLONG destinationSize = 0;
-		if (GetFileSizeBytes(managerSource, sourceSize) &&
-		    GetFileSizeBytes(destinationPath, destinationSize) &&
-		    sourceSize > 0 && sourceSize == destinationSize) {
-			return true;
-		}
-
-		StatusDialog::AppendLog(
-		    LauncherI18n::T(LauncherI18n::Str::WarnManagerBusy));
-		return true;
-	}
-
-	StatusDialog::AppendLogf(
-	    LauncherI18n::T(LauncherI18n::Str::WarnDeployManagerFmt),
-	    error);
-	return false;
-}
-
-static bool DeployGraphicsProxy(const std::wstring &gameDirectory) {
-	const auto &config = LauncherConfig::Get();
-
-	std::wstring proxySource;
-	if (!Paths::ResolveGraphicsProxyDll(proxySource)) {
-		StatusDialog::AppendLog(
-		    LauncherI18n::T(LauncherI18n::Str::WarnNoProxyDll));
-		return false;
-	}
-
-	const auto destinationPath =
-	    gameDirectory + L"\\" + config.graphicsProxyDllName;
-	const auto backupPath = gameDirectory + L"\\" + config.graphicsProxyBackup;
-
-	if (!BackupAndCopyFile(proxySource, destinationPath, backupPath)) {
-		StatusDialog::AppendLogf(
-		    LauncherI18n::T(LauncherI18n::Str::WarnDeployProxyFmt),
-		    GetLastError());
-		return false;
-	}
-
-	StatusDialog::AppendLogf(LauncherI18n::T(LauncherI18n::Str::DeployedProxyFmt),
-	                       destinationPath.c_str());
-	return true;
 }
 
 static HANDLE DuplicateExplorerPrimaryToken() {
@@ -396,7 +283,7 @@ bool PrepareGameEnvironment() {
 	}
 
 	StatusDialog::SetStep(LauncherI18n::T(LauncherI18n::Str::PreparingGameFiles));
-	DeployManagerDependency(gameDirectory);
+	const bool patched = GamePatch::PatchDependenciesToGame();
 
 	const auto displaySettings = LauncherSettings::LoadDisplaySettings();
 	std::wstring applyLog;
@@ -406,7 +293,8 @@ bool PrepareGameEnvironment() {
 		StatusDialog::AppendLogf(LauncherI18n::T(LauncherI18n::Str::WarnFmt), applyLog.c_str());
 	}
 
-	return DeployGraphicsProxy(gameDirectory);
+	(void)gameDirectory;
+	return patched;
 }
 
 bool LaunchGameExecutable() {

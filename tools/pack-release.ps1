@@ -1,6 +1,8 @@
 ﻿# Pack dist/ into a GitHub Release zip for ModuleLauncher auto-update.
 # Asset name: mirroredge-module-launcher-<semver>-win32.zip
 #
+# Ships only runtime files (no MSVC .pdb/.exp/.lib, no bat/alias).
+#
 # Usage (after build):
 #   .\tools\pack-release.ps1
 #   .\tools\pack-release.ps1 -DistPath .\dist -OutDir .\artifacts
@@ -14,6 +16,34 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+function Remove-NonRuntimeArtifacts {
+    param([Parameter(Mandatory = $true)][string]$Root)
+
+    if (-not (Test-Path $Root)) { return }
+
+    $patterns = @(
+        "*.exp", "*.lib", "*.pdb", "*.ilk", "*.obj", "*.iobj", "*.ipdb",
+        "*.map", "*.idb", "*.tlog", "*.lastbuildstate", "*.recipe",
+        "*.log", "*.vgdbsettings"
+    )
+    Get-ChildItem -Path $Root -Recurse -File -Include $patterns -ErrorAction SilentlyContinue |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+
+    foreach ($stale in @(
+            "mirroredge-module-launcher.exe",
+            "ModuleLauncher.bat",
+            "ModuleLauncher.pdb",
+            "d3d9.pdb",
+            "d3d9.exp",
+            "d3d9.lib"
+        )) {
+        $p = Join-Path $Root $stale
+        if (Test-Path $p) {
+            Remove-Item $p -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
 
 if (-not $DistPath) {
     $DistPath = Join-Path $RepoRoot "dist"
@@ -48,7 +78,6 @@ New-Item -ItemType Directory -Path $staging -Force | Out-Null
 
 $copyNames = @(
     "ModuleLauncher.exe",
-    "mirroredge-module-launcher.exe",
     "VERSION.json",
     "CHANGELOG.md",
     "settings.json"
@@ -72,8 +101,19 @@ if (Test-Path $d3d9) {
     Copy-Item $d3d9 (Join-Path $staging "d3d9.dll") -Force
 }
 
-$bat = "@echo off`r`nstart `"`" `"%~dp0ModuleLauncher.exe`" %*`r`n"
-[System.IO.File]::WriteAllText((Join-Path $staging "ModuleLauncher.bat"), $bat)
+# PhysX pack: only when it contains runtime DLLs (skip README-only tree).
+$physxSrc = Join-Path $RepoRoot "physx"
+if (-not (Test-Path $physxSrc)) {
+    $physxSrc = Join-Path $DistPath "physx"
+}
+if (Test-Path $physxSrc) {
+    $physxDlls = @(Get-ChildItem $physxSrc -Recurse -Filter *.dll -File -ErrorAction SilentlyContinue)
+    if ($physxDlls.Count -gt 0) {
+        Copy-Item $physxSrc (Join-Path $staging "physx") -Recurse -Force
+    }
+}
+
+Remove-NonRuntimeArtifacts -Root $staging
 
 $zipName = "mirroredge-module-launcher-$Version-win32.zip"
 $zipPath = Join-Path $OutDir $zipName
