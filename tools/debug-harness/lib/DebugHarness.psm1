@@ -2863,11 +2863,19 @@ function Test-HarnessPrePushTestLogsTouched {
             $parts = $line -split '\s+'
             if ($parts.Count -lt 4) { continue }
 
+            $localRef = $parts[0]
             $localSha = $parts[1]
             $remoteSha = $parts[3]
             if ($localSha -match "^$zeroSha$") { continue }
 
-            $files = git diff --name-only $remoteSha $localSha -- test-logs/ 2>$null
+            # New tag/branch: remote SHA is zeros. Tags do not need test-logs
+            # validation (commits were already checked when main was pushed).
+            if ($remoteSha -match "^$zeroSha$") {
+                if ($localRef -like 'refs/tags/*') { continue }
+                $files = git diff-tree --no-commit-id --name-only -r $localSha -- test-logs/ 2>$null
+            } else {
+                $files = git diff --name-only $remoteSha $localSha -- test-logs/ 2>$null
+            }
             if ($files) {
                 return $true
             }
