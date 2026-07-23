@@ -155,6 +155,15 @@ enum class Str : int {
 	WarnPhysXMissingFileFmt,
 	WarnPhysXCopyFailedFmt,
 	PatchedPhysXFmt,
+	PatchedPhysXFromFmt,
+	PhysXSourcePack,
+	PhysXSourceNvidia,
+	PhysXSourceGame,
+	PhysXUsingSourceFmt,
+	PhysXAlreadyCurrent,
+	PhysXDownloading,
+	PhysXInstallerLaunched,
+	PhysXDownloadFailedFmt,
 	Count
 };
 

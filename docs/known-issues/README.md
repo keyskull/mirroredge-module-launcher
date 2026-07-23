@@ -15,9 +15,9 @@
 | [KI-2026-005](KI-2026-005-mp-playthrough-ingameplay.md) | mitigated | mp-playthrough-bots (delegates to mp-real-level-bots START_NEW_GAME) | harness / multiplayer |
 | [KI-2026-006](KI-2026-006-core-boot-probe-globals.md) | resolved | Core loaded ä½† `init: game not ready yet` æ— é™å¾ªçŽ¯ | sdk / core / borderless |
 | [KI-2026-007](KI-2026-007-ipc-thread-ensure-hooks.md) | resolved | ENSURE_MP_HOOKS åœ¨ IPC çº¿ç¨‹æ‰§è¡Œå¯¼è‡´æ ¸å¿ƒåˆå§‹åŒ–å¤±è´¥ | core / mod_ipc |
-| [KI-2026-008](KI-2026-008-startup-splash-harness-gap.md) | investigating | å¯åŠ¨ splash å¡ä½ä½† harness æœªæ£€æµ‹ | harness / module_manager |
+| [KI-2026-008](KI-2026-008-startup-splash-harness-gap.md) | resolved | å¯åŠ¨ splash å¡ä½ä½† harness æœªæ£€æµ‹ | harness / module_manager |
 | [KI-2026-009](KI-2026-009-engine-tab-unsafe-engine-scan.md) | resolved | Engine æ ‡ç­¾é¡µè£¸ `GetEngine()` æŸ¥æ‰¾å¯¼è‡´å´©æºƒ | core / module_manager / sdk |
-| [KI-2026-010](KI-2026-010-module-manager-console-keyboard-input.md) | open | Module Manager console æ‰“ä¸å¼€å­— / é”®ç›˜è¾“å…¥ä¸åˆ° ImGui | module_manager / input |
+| [KI-2026-010](KI-2026-010-module-manager-console-keyboard-input.md) | mitigated | Module Manager console æ‰“ä¸å¼€å­— / é”®ç›˜è¾“å…¥ä¸åˆ° ImGui | module_manager / input |
 | [KI-2026-011](KI-2026-011-rdp-block-creatdevice.md) | resolved | RDP session blocks CreateDevice â€” "Message" dialog | d3d9 / injection / harness |
 | [KI-2026-012](KI-2026-012-soft-freeze-after-bot-despawn.md) | resolved | Bot disconnect Despawn soft-freeze after TransformBones | multiplayer / engine |
 | [KI-2026-013](KI-2026-013-tdpawn-remote-spike.md) | removed | TdPawn remote spike deleted 2026-07-22 — mesh-only remotes | multiplayer / engine |

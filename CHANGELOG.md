@@ -6,6 +6,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Version numbers follow [Semantic Versioning](https://semver.org/).  
 Authoritative version: [`version.json`](version.json) (synced to `shared/product_version.h` at build).
 
+## [Unreleased]
+
+## [1.2.13] - 2026-07-23
+
+### Added
+
+- **Fix PhysX local + official download** — resolve order: complete `physx\` pack → NVIDIA PhysX install → game `Binaries`; if none complete, download/launch official PhysX 9.23.1019 System Software, then Fix again.
+
+### Changed
+
+- **KI-2026-010** status → mitigated (console keyboard fix pending manual confirm); **KI-2026-008** index → resolved.
+
 ## [1.2.12] - 2026-07-23
 
 ### Added

@@ -55,7 +55,7 @@ See [module-manager.md](module-manager.md) for the verified workflow.
 | `launcher_settings.cpp` | `LauncherSettings::LoadDisplaySettings` | Reads/writes `settings.json` (`launcher.*`) via `shared/deploy_settings.cpp` |
 | `game_config.cpp` | `GameConfig::ApplyDisplaySettings` | Sync `TdEngine.ini` + `module_manager.settings.ini` on launch. Borderless: window from `Scale` × monitor; render from preset or match-window (`RenderMatchWindow`) |
 | `game_launch.cpp` | `PrepareGameEnvironment`, `LaunchGameExecutable` | Full modules + proxy patch via `game_patch`; apply display; start game |
-| `game_patch.cpp` | `EvaluateModulesSync`, `PatchModulesToGame`, `PatchDependenciesToGame`, `PatchPhysXToGame` | Modules version detect; Patch deps; PhysX overlay |
+| `game_patch.cpp` | `EvaluateModulesSync`, `PatchModulesToGame`, `PatchDependenciesToGame`, `PatchPhysXToGame` | Modules version detect; Patch deps; PhysX overlay (local / NVIDIA / official download) |
 | `config_integrity_bypass.cpp` | `ConfigIntegrityBypass::BeginWatching`, `TryApplyToProcess` | In-memory bypass for `Default*.ini` integrity checks in `MirrorsEdge.exe` |
 | `injection_flow.cpp` | `RunLauncherFlow`, `WaitForManagerViaProxy` | Wait for proxy-loaded manager |
 | `process_util.cpp` | `FindProcessByName`, `HasLoadedModuleByPid` | Process/module introspection (no elevation) |

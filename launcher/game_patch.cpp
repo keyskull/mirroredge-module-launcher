@@ -6,6 +6,7 @@
 #include "launcher_i18n.h"
 #include "paths.h"
 #include "runtime_version.h"
+#include "update_check.h"
 #include "ui/status_dialog.h"
 
 #include <vector>
@@ -275,6 +276,259 @@ std::wstring ReadProductVersionFile(const std::wstring &root) {
 	return L"";
 }
 
+
+constexpr char kPhysXInstallerUrl[] =
+    "https://us.download.nvidia.com/Windows/9.23.1019/"
+    "PhysX_9.23.1019_SystemSoftware.exe";
+constexpr wchar_t kPhysXInstallerName[] =
+    L"PhysX_9.23.1019_SystemSoftware.exe";
+
+struct PhysXFileSpec {
+	const wchar_t *relative;
+	const wchar_t *fileName;
+};
+
+constexpr PhysXFileSpec kPhysXFiles[] = {
+    {L"NxCharacter.dll", L"NxCharacter.dll"},
+    {L"NxCooking.dll", L"NxCooking.dll"},
+    {L"PhysXCore.dll", L"PhysXCore.dll"},
+    {L"PhysXDevice.dll", L"PhysXDevice.dll"},
+    {L"PhysXExtensions.dll", L"PhysXExtensions.dll"},
+    {L"PhysXLocal\\PhysXLoader.dll", L"PhysXLoader.dll"},
+};
+
+bool IsDirectoryPath(const std::wstring &path) {
+	if (path.empty() || !PathFileExistsW(path.c_str())) {
+		return false;
+	}
+	return (GetFileAttributesW(path.c_str()) & FILE_ATTRIBUTE_DIRECTORY) != 0;
+}
+
+bool DirectoryHasAllPhysXFiles(const std::wstring &directory) {
+	if (!IsDirectoryPath(directory)) {
+		return false;
+	}
+	for (const auto &entry : kPhysXFiles) {
+		const std::wstring path = directory + L"\\" + entry.relative;
+		if (!PathFileExistsW(path.c_str())) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool FindFileRecursive(const std::wstring &rootPath, const wchar_t *fileName,
+                       std::wstring &outPath, int depth = 0) {
+	if (depth > 8 || rootPath.empty() || !fileName) {
+		return false;
+	}
+	const std::wstring direct = rootPath + L"\\" + fileName;
+	if (PathFileExistsW(direct.c_str()) &&
+	    (GetFileAttributesW(direct.c_str()) & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+		outPath = direct;
+		return true;
+	}
+
+	const std::wstring pattern = rootPath + L"\\*";
+	WIN32_FIND_DATAW fd = {};
+	const HANDLE find = FindFirstFileW(pattern.c_str(), &fd);
+	if (find == INVALID_HANDLE_VALUE) {
+		return false;
+	}
+	bool found = false;
+	do {
+		if (fd.cFileName[0] == L'.' &&
+		    (fd.cFileName[1] == L'\0' ||
+		     (fd.cFileName[1] == L'.' && fd.cFileName[2] == L'\0'))) {
+			continue;
+		}
+		if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+			if (_wcsicmp(fd.cFileName, fileName) == 0) {
+				outPath = rootPath + L"\\" + fd.cFileName;
+				found = true;
+				break;
+			}
+			continue;
+		}
+		if (FindFileRecursive(rootPath + L"\\" + fd.cFileName, fileName, outPath,
+		                      depth + 1)) {
+			found = true;
+			break;
+		}
+	} while (FindNextFileW(find, &fd));
+	FindClose(find);
+	return found;
+}
+
+bool StagePhysXFromSearchRoots(const std::wstring *roots, size_t rootCount,
+                               std::wstring &stagingDir) {
+	wchar_t tempPath[MAX_PATH] = {};
+	if (GetTempPathW(MAX_PATH, tempPath) == 0) {
+		return false;
+	}
+	stagingDir = std::wstring(tempPath) + L"mirroredge-physx-stage";
+	if (!EnsureDirectory(stagingDir)) {
+		return false;
+	}
+	if (!EnsureDirectory(stagingDir + L"\\PhysXLocal")) {
+		return false;
+	}
+
+	for (const auto &entry : kPhysXFiles) {
+		std::wstring found;
+		for (size_t i = 0; i < rootCount; ++i) {
+			if (roots[i].empty() || !IsDirectoryPath(roots[i])) {
+				continue;
+			}
+			if (FindFileRecursive(roots[i], entry.fileName, found)) {
+				break;
+			}
+		}
+		if (found.empty()) {
+			return false;
+		}
+		const std::wstring dest = stagingDir + L"\\" + entry.relative;
+		if (!CopyFileW(found.c_str(), dest.c_str(), FALSE)) {
+			return false;
+		}
+	}
+	return DirectoryHasAllPhysXFiles(stagingDir);
+}
+
+bool TryResolveLauncherPhysXPack(std::wstring &directory) {
+	std::wstring launcherDirectory;
+	if (!Paths::GetLauncherDirectory(launcherDirectory)) {
+		return false;
+	}
+
+	const std::wstring candidates[] = {
+	    launcherDirectory + L"\\physx",
+	    launcherDirectory + L"\\dist\\physx",
+	};
+	for (const auto &candidate : candidates) {
+		if (DirectoryHasAllPhysXFiles(candidate)) {
+			directory = candidate;
+			return true;
+		}
+	}
+
+	wchar_t parent[MAX_PATH] = {};
+	wcsncpy_s(parent, launcherDirectory.c_str(), _TRUNCATE);
+	if (PathRemoveFileSpecW(parent)) {
+		const std::wstring fromParent = std::wstring(parent) + L"\\physx";
+		if (DirectoryHasAllPhysXFiles(fromParent)) {
+			directory = fromParent;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool TryResolveNvidiaPhysXPack(std::wstring &directory) {
+	std::wstring roots[4];
+	size_t count = 0;
+
+	wchar_t programFilesX86[MAX_PATH] = {};
+	if (GetEnvironmentVariableW(L"ProgramFiles(x86)", programFilesX86,
+	                            MAX_PATH) > 0) {
+		roots[count++] =
+		    std::wstring(programFilesX86) + L"\\NVIDIA Corporation\\PhysX";
+	}
+	wchar_t programFiles[MAX_PATH] = {};
+	if (GetEnvironmentVariableW(L"ProgramFiles", programFiles, MAX_PATH) > 0) {
+		roots[count++] =
+		    std::wstring(programFiles) + L"\\NVIDIA Corporation\\PhysX";
+	}
+
+	if (count == 0) {
+		return false;
+	}
+
+	for (size_t i = 0; i < count; ++i) {
+		const std::wstring common = roots[i] + L"\\Common";
+		if (DirectoryHasAllPhysXFiles(common)) {
+			directory = common;
+			return true;
+		}
+		if (DirectoryHasAllPhysXFiles(roots[i])) {
+			directory = roots[i];
+			return true;
+		}
+	}
+
+	std::wstring staging;
+	if (!StagePhysXFromSearchRoots(roots, count, staging)) {
+		return false;
+	}
+	directory = staging;
+	return true;
+}
+
+bool TryResolveGamePhysXPack(std::wstring &directory) {
+	std::wstring gameBinaries;
+	if (!Paths::GetGameBinariesDirectory(gameBinaries)) {
+		return false;
+	}
+	if (!DirectoryHasAllPhysXFiles(gameBinaries)) {
+		return false;
+	}
+	directory = gameBinaries;
+	return true;
+}
+
+bool ResolvePhysXSource(std::wstring &directory, std::wstring &sourceLabel) {
+	if (TryResolveLauncherPhysXPack(directory)) {
+		sourceLabel = LauncherI18n::T(LauncherI18n::Str::PhysXSourcePack);
+		return true;
+	}
+	if (TryResolveNvidiaPhysXPack(directory)) {
+		sourceLabel = LauncherI18n::T(LauncherI18n::Str::PhysXSourceNvidia);
+		return true;
+	}
+	if (TryResolveGamePhysXPack(directory)) {
+		sourceLabel = LauncherI18n::T(LauncherI18n::Str::PhysXSourceGame);
+		return true;
+	}
+	directory.clear();
+	sourceLabel.clear();
+	return false;
+}
+
+bool OfferOfficialPhysXDownload() {
+	StatusDialog::AppendLog(
+	    LauncherI18n::T(LauncherI18n::Str::PhysXDownloading));
+
+	wchar_t tempPath[MAX_PATH] = {};
+	if (GetTempPathW(MAX_PATH, tempPath) == 0) {
+		StatusDialog::AppendLogf(
+		    LauncherI18n::T(LauncherI18n::Str::PhysXDownloadFailedFmt),
+		    L"GetTempPath");
+		return false;
+	}
+
+	const std::wstring dest = std::wstring(tempPath) + kPhysXInstallerName;
+	std::wstring error;
+	if (!UpdateCheck::DownloadFile(kPhysXInstallerUrl, dest, &error)) {
+		StatusDialog::AppendLogf(
+		    LauncherI18n::T(LauncherI18n::Str::PhysXDownloadFailedFmt),
+		    error.empty() ? L"download failed" : error.c_str());
+		return false;
+	}
+
+	const HINSTANCE launched = ShellExecuteW(
+	    nullptr, L"open", dest.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+	if (reinterpret_cast<INT_PTR>(launched) <= 32) {
+		StatusDialog::AppendLogf(
+		    LauncherI18n::T(LauncherI18n::Str::PhysXDownloadFailedFmt),
+		    L"ShellExecute failed");
+		return false;
+	}
+
+	StatusDialog::AppendLog(
+	    LauncherI18n::T(LauncherI18n::Str::PhysXInstallerLaunched));
+	return true;
+}
+
 } // namespace
 
 bool ResolveLocalModulesDirectory(std::wstring &directory) {
@@ -299,34 +553,8 @@ bool ResolveLocalModulesDirectory(std::wstring &directory) {
 }
 
 bool ResolvePhysXPatchDirectory(std::wstring &directory) {
-	std::wstring launcherDirectory;
-	if (!Paths::GetLauncherDirectory(launcherDirectory)) {
-		return false;
-	}
-
-	const std::wstring candidates[] = {
-	    launcherDirectory + L"\\physx",
-	    launcherDirectory + L"\\dist\\physx",
-	};
-	for (const auto &candidate : candidates) {
-		if (PathFileExistsW(candidate.c_str()) &&
-		    (GetFileAttributesW(candidate.c_str()) & FILE_ATTRIBUTE_DIRECTORY)) {
-			directory = candidate;
-			return true;
-		}
-	}
-
-	wchar_t parent[MAX_PATH] = {};
-	wcscpy(parent, launcherDirectory.c_str());
-	if (PathRemoveFileSpecW(parent)) {
-		const std::wstring fromParent = std::wstring(parent) + L"\\physx";
-		if (PathFileExistsW(fromParent.c_str()) &&
-		    (GetFileAttributesW(fromParent.c_str()) & FILE_ATTRIBUTE_DIRECTORY)) {
-			directory = fromParent;
-			return true;
-		}
-	}
-	return false;
+	std::wstring sourceLabel;
+	return ResolvePhysXSource(directory, sourceLabel);
 }
 
 ModulesSyncStatus EvaluateModulesSync(const std::wstring &gameRoot) {
@@ -512,9 +740,12 @@ bool PatchDependenciesToGame() {
 
 bool PatchPhysXToGame() {
 	std::wstring physxDir;
-	if (!ResolvePhysXPatchDirectory(physxDir)) {
-		StatusDialog::AppendLog(
-		    LauncherI18n::T(LauncherI18n::Str::WarnNoPhysXPack));
+	std::wstring sourceLabel;
+	if (!ResolvePhysXSource(physxDir, sourceLabel)) {
+		if (!OfferOfficialPhysXDownload()) {
+			StatusDialog::AppendLog(
+			    LauncherI18n::T(LauncherI18n::Str::WarnNoPhysXPack));
+		}
 		return false;
 	}
 
@@ -525,20 +756,13 @@ bool PatchPhysXToGame() {
 		return false;
 	}
 
-	struct PhysXFile {
-		const wchar_t *relative;
-	};
-	const PhysXFile files[] = {
-	    {L"NxCharacter.dll"},
-	    {L"NxCooking.dll"},
-	    {L"PhysXCore.dll"},
-	    {L"PhysXDevice.dll"},
-	    {L"PhysXExtensions.dll"},
-	    {L"PhysXLocal\\PhysXLoader.dll"},
-	};
+	StatusDialog::AppendLogf(
+	    LauncherI18n::T(LauncherI18n::Str::PhysXUsingSourceFmt),
+	    sourceLabel.c_str(), physxDir.c_str());
 
 	int copied = 0;
-	for (const auto &entry : files) {
+	int skipped = 0;
+	for (const auto &entry : kPhysXFiles) {
 		const std::wstring source = physxDir + L"\\" + entry.relative;
 		if (!PathFileExistsW(source.c_str())) {
 			StatusDialog::AppendLogf(
@@ -548,6 +772,11 @@ bool PatchPhysXToGame() {
 		}
 
 		const std::wstring destination = gameBinaries + L"\\" + entry.relative;
+		if (ArePathsEquivalent(source, destination)) {
+			++skipped;
+			continue;
+		}
+
 		const size_t slash = destination.find_last_of(L"\\/");
 		if (slash != std::wstring::npos) {
 			EnsureDirectory(destination.substr(0, slash));
@@ -563,8 +792,13 @@ bool PatchPhysXToGame() {
 		++copied;
 	}
 
-	StatusDialog::AppendLogf(LauncherI18n::T(LauncherI18n::Str::PatchedPhysXFmt),
-	                         copied, gameBinaries.c_str());
+	StatusDialog::AppendLogf(
+	    LauncherI18n::T(LauncherI18n::Str::PatchedPhysXFromFmt), copied,
+	    sourceLabel.c_str(), gameBinaries.c_str());
+	if (skipped > 0 && copied == 0) {
+		StatusDialog::AppendLog(
+		    LauncherI18n::T(LauncherI18n::Str::PhysXAlreadyCurrent));
+	}
 	return true;
 }
 
