@@ -60,6 +60,20 @@ $knownClasses = [System.Collections.ArrayList]::new()
 [void]$knownClasses.Add(@{cpp='ATdPawn';                     size=0x08F8})
 [void]$knownClasses.Add(@{cpp='ATdPlayerPawn';               size=0x09E4})
 
+# Types used by safe_state / safe_gameplay (added 2026-07-14)
+[void]$knownClasses.Add(@{cpp='ACheckpoint';                 size=0x0318})
+[void]$knownClasses.Add(@{cpp='AGameReplicationInfo';        size=0x0254})
+[void]$knownClasses.Add(@{cpp='ANavigationPoint';            size=0x0314})
+[void]$knownClasses.Add(@{cpp='APlayerReplicationInfo';      size=0x0258})
+[void]$knownClasses.Add(@{cpp='ATdCheckpoint';               size=0x0338})
+[void]$knownClasses.Add(@{cpp='ATdGameReplicationInfo';      size=0x0268})
+[void]$knownClasses.Add(@{cpp='ATdPlayerReplicationInfo';    size=0x0264})
+[void]$knownClasses.Add(@{cpp='ATdStashpoint';               size=0x01E4})
+[void]$knownClasses.Add(@{cpp='ATdTeamInfo';                 size=0x0214})
+[void]$knownClasses.Add(@{cpp='ATeamInfo';                   size=0x01DC})
+[void]$knownClasses.Add(@{cpp='UMapInfo';                    size=0x003C})
+[void]$knownClasses.Add(@{cpp='UTdMapInfo';                  size=0x005C})
+
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss K"
 
 # Build header content
