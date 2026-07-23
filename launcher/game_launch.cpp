@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "launcher_i18n.h"
 
 #include "config.h"
 #include "game_config.h"
@@ -77,8 +78,7 @@ static bool DeployManagerDependency(const std::wstring &gameBinariesDirectory) {
 	std::wstring managerSource;
 	if (!Paths::ResolveManagerDll(managerSource)) {
 		StatusDialog::AppendLog(
-		    L"\u8b66\u544a\uff1a\u672a\u627e\u5230 module_manager.dll\u3002"
-		    L"\u8bf7\u5148\u8fd0\u884c build.ps1 \u90e8\u7f72\u3002");
+		    LauncherI18n::T(LauncherI18n::Str::WarnNoManagerDll));
 		return false;
 	}
 
@@ -101,7 +101,7 @@ static bool DeployManagerDependency(const std::wstring &gameBinariesDirectory) {
 
 	if (CopyFileW(managerSource.c_str(), destinationPath.c_str(), FALSE)) {
 		StatusDialog::AppendLogf(
-		    L"\u5df2\u90e8\u7f72 module_manager.dll: %s",
+		    LauncherI18n::T(LauncherI18n::Str::DeployedManagerFmt),
 		    destinationPath.c_str());
 		return true;
 	}
@@ -118,13 +118,12 @@ static bool DeployManagerDependency(const std::wstring &gameBinariesDirectory) {
 		}
 
 		StatusDialog::AppendLog(
-		    L"\u8b66\u544a\uff1amodule_manager.dll \u88ab\u5360\u7528\u4e14\u7248\u672c\u53ef\u80fd\u4e0d\u540c\u3002"
-		    L"\u8bf7\u5148\u5173\u95ed\u6e38\u620f\u540e\u91cd\u542f\u542f\u52a8\u5668\u4ee5\u66f4\u65b0\u3002");
+		    LauncherI18n::T(LauncherI18n::Str::WarnManagerBusy));
 		return true;
 	}
 
 	StatusDialog::AppendLogf(
-	    L"\u8b66\u544a\uff1a\u65e0\u6cd5\u90e8\u7f72 module_manager.dll (\u9519\u8bef %u)\u3002",
+	    LauncherI18n::T(LauncherI18n::Str::WarnDeployManagerFmt),
 	    error);
 	return false;
 }
@@ -135,8 +134,7 @@ static bool DeployGraphicsProxy(const std::wstring &gameDirectory) {
 	std::wstring proxySource;
 	if (!Paths::ResolveGraphicsProxyDll(proxySource)) {
 		StatusDialog::AppendLog(
-		    L"\u8b66\u544a\uff1a\u672a\u627e\u5230 d3d9 \u4ee3\u7406 DLL\u3002"
-		    L"\u8bf7\u5148\u8fd0\u884c build.ps1 \u6216\u5c06 dist\\d3d9.dll \u653e\u5728\u542f\u52a8\u5668\u76ee\u5f55\u3002");
+		    LauncherI18n::T(LauncherI18n::Str::WarnNoProxyDll));
 		return false;
 	}
 
@@ -146,12 +144,12 @@ static bool DeployGraphicsProxy(const std::wstring &gameDirectory) {
 
 	if (!BackupAndCopyFile(proxySource, destinationPath, backupPath)) {
 		StatusDialog::AppendLogf(
-		    L"\u8b66\u544a\uff1a\u65e0\u6cd5\u90e8\u7f72 d3d9 \u4ee3\u7406 (\u9519\u8bef %u)\u3002",
+		    LauncherI18n::T(LauncherI18n::Str::WarnDeployProxyFmt),
 		    GetLastError());
 		return false;
 	}
 
-	StatusDialog::AppendLogf(L"\u5df2\u90e8\u7f72 d3d9 \u4ee3\u7406: %s",
+	StatusDialog::AppendLogf(LauncherI18n::T(LauncherI18n::Str::DeployedProxyFmt),
 	                       destinationPath.c_str());
 	return true;
 }
@@ -258,13 +256,13 @@ static bool LaunchWithCreateProcess(const std::wstring &gameExe,
 		}
 		if (!patched) {
 			StatusDialog::AppendLog(
-			    L"\u8b66\u544a\uff1a\u542f\u52a8\u524d\u914d\u7f6e\u7ed5\u8fc7\u672a\u5e94\u7528\uff0c\u540e\u53f0\u76d1\u63a7\u5c06\u91cd\u8bd5\u3002");
+			    LauncherI18n::T(LauncherI18n::Str::WarnBypassNotApplied));
 		}
 		resumeGuard.Resume();
 		const auto resumed = ResumeAllProcessThreads(processInfo.dwProcessId);
 		if (resumed > 0) {
 			StatusDialog::AppendLogf(
-			    L"\u5df2\u6062\u590d\u6e38\u620f\u8fdb\u7a0b %u \u4e2a\u6302\u8d77\u7ebf\u7a0b\u3002",
+			    LauncherI18n::T(LauncherI18n::Str::ResumedThreadsFmt),
 			    resumed);
 		}
 	}
@@ -340,7 +338,7 @@ static bool StartGameProcess(const std::wstring &gameExe,
 	}
 
 	StatusDialog::AppendLogf(
-	    L"\u76f4\u63a5\u542f\u52a8\u5931\u8d25 (\u9519\u8bef %u: %s)\uff0c\u5c1d\u8bd5\u4ee5\u666e\u901a\u7528\u6237\u6743\u9650\u542f\u52a8...",
+	    LauncherI18n::T(LauncherI18n::Str::DirectLaunchFailFmt),
 	    error, FormatWin32Error(error).c_str());
 
 	if (const auto explorerToken = DuplicateExplorerPrimaryToken()) {
@@ -349,21 +347,20 @@ static bool StartGameProcess(const std::wstring &gameExe,
 		CloseHandle(explorerToken);
 		if (launched) {
 			StatusDialog::AppendLog(
-			    L"\u5df2\u4ee5\u666e\u901a\u7528\u6237\u6743\u9650\u542f\u52a8\u6e38\u620f\u3002");
+			    LauncherI18n::T(LauncherI18n::Str::LaunchedAsUser));
 			return true;
 		}
 	}
 
 	if (LaunchWithShellExecute(gameExe, gameDirectory, extraArgs, &error)) {
-		StatusDialog::AppendLog(L"\u5df2\u901a\u8fc7 Shell \u542f\u52a8\u6e38\u620f\u3002");
+		StatusDialog::AppendLog(LauncherI18n::T(LauncherI18n::Str::LaunchedViaShell));
 		return true;
 	}
 
-	StatusDialog::AppendLogf(L"\u542f\u52a8\u5931\u8d25 (\u9519\u8bef %u: %s)",
+	StatusDialog::AppendLogf(LauncherI18n::T(LauncherI18n::Str::LaunchFailFmt),
 	                       error, FormatWin32Error(error).c_str());
 	StatusDialog::AppendLog(
-	    L"\u53ef\u5c1d\u8bd5\u624b\u52a8\u542f\u52a8 Binaries\\MirrorsEdge.exe\uff0c"
-	    L"\u7136\u540e\u8ba9\u542f\u52a8\u5668\u7b49\u5f85\u6ce8\u5165\u3002");
+	    LauncherI18n::T(LauncherI18n::Str::TryManualLaunch));
 	return false;
 }
 
@@ -373,17 +370,13 @@ static void WarnIfSecuRomPresent(const std::wstring &gameExe) {
 	}
 
 	StatusDialog::AppendLog(
-	    L"\u8b66\u544a\uff1a\u68c0\u6d4b\u5230\u65e7\u7248 SecuROM \u4fdd\u62a4\uff08\u53ef\u80fd\u51fa\u73b0\u300c\u672a\u63d2\u5165 "
-	    L"CD/DVD\u300d\u9519\u8bef\uff09\u3002");
+	    LauncherI18n::T(LauncherI18n::Str::WarnSecuRom));
 	StatusDialog::AppendLog(
-	    L"  Steam\uff1a\u5728\u5e93\u4e2d\u53f3\u952e\u6e38\u620f \u2192 \u5c5e\u6027 \u2192 \u672c\u5730\u6587\u4ef6 "
-	    L"\u2192 \u9a8c\u8bc1\u6e38\u620f\u6587\u4ef6\u5b8c\u6574\u6027\uff08\u4f1a\u66ff\u6362\u4e3a\u65e0 "
-	    L"SecuROM \u7248\u672c\uff09\u3002");
+	    LauncherI18n::T(LauncherI18n::Str::SecuRomSteam));
 	StatusDialog::AppendLog(
-	    L"  EA/\u96f6\u552e\u7248\uff1a\u8bf7\u4ece EA App \u91cd\u65b0\u5b89\u88c5\uff0c\u6216\u4f7f\u7528 "
-	    L"PCGamingWiki \u7684 Mirror's Edge Origin Fix \u8865\u4e01\u3002");
+	    LauncherI18n::T(LauncherI18n::Str::SecuRomEa));
 	StatusDialog::AppendLog(
-	    L"  \u8be6\u89c1 docs/troubleshooting.md \u2192 \u300c\u672a\u63d2\u5165 CD/DVD\u300d\u3002");
+	    LauncherI18n::T(LauncherI18n::Str::SecuRomDocs));
 }
 
 bool PrepareGameEnvironment() {
@@ -391,19 +384,18 @@ bool PrepareGameEnvironment() {
 
 	if (IsProcessRunning(config.gameProcessName.c_str())) {
 		StatusDialog::AppendLog(
-		    L"Mirror's Edge \u5df2\u5728\u8fd0\u884c\uff0c\u8df3\u8fc7\u542f\u52a8\u524d\u51c6\u5907\u3002\n"
-		    L"\u82e5\u9700\u66f4\u65b0\u6a21\u7ec4\u6587\u4ef6\uff0c\u8bf7\u5148\u5173\u95ed\u6e38\u620f\u540e\u91cd\u542f\u542f\u52a8\u5668\u3002");
+		    LauncherI18n::T(LauncherI18n::Str::GameAlreadyRunningPrep));
 		return true;
 	}
 
 	std::wstring gameDirectory;
 	if (!Paths::GetGameBinariesDirectory(gameDirectory)) {
 		StatusDialog::AppendLog(
-		    L"\u672a\u627e\u5230\u6e38\u620f Binaries \u76ee\u5f55\uff0c\u8df3\u8fc7\u542f\u52a8\u524d\u51c6\u5907\u3002");
+		    LauncherI18n::T(LauncherI18n::Str::NoBinariesSkipPrep));
 		return false;
 	}
 
-	StatusDialog::SetStep(L"\u51c6\u5907\u6e38\u620f\u6587\u4ef6");
+	StatusDialog::SetStep(LauncherI18n::T(LauncherI18n::Str::PreparingGameFiles));
 	DeployManagerDependency(gameDirectory);
 
 	const auto displaySettings = LauncherSettings::LoadDisplaySettings();
@@ -411,7 +403,7 @@ bool PrepareGameEnvironment() {
 	if (GameConfig::ApplyDisplaySettings(displaySettings, &applyLog)) {
 		StatusDialog::AppendLog(applyLog.c_str());
 	} else if (!applyLog.empty()) {
-		StatusDialog::AppendLogf(L"\u8b66\u544a\uff1a%s", applyLog.c_str());
+		StatusDialog::AppendLogf(LauncherI18n::T(LauncherI18n::Str::WarnFmt), applyLog.c_str());
 	}
 
 	return DeployGraphicsProxy(gameDirectory);
@@ -422,7 +414,7 @@ bool LaunchGameExecutable() {
 
 	if (IsProcessRunning(config.gameProcessName.c_str())) {
 		StatusDialog::AppendLog(
-		    L"Mirror's Edge \u5df2\u5728\u8fd0\u884c\uff0c\u65e0\u9700\u91cd\u590d\u542f\u52a8\u3002");
+		    LauncherI18n::T(LauncherI18n::Str::GameAlreadyRunning));
 		return true;
 	}
 
@@ -431,10 +423,9 @@ bool LaunchGameExecutable() {
 		std::wstring launcherDirectory;
 		Paths::GetLauncherDirectory(launcherDirectory);
 		StatusDialog::AppendLogf(
-		    L"\u672a\u627e\u5230\u6e38\u620f\u3002\u8bf7\u70b9\u51fb\u300c\u6d4f\u89c8\u300d\u9009\u62e9\u6e38\u620f\u76ee\u5f55"
-		    L"\uff08\u542b Binaries\\%s\uff09\u3002",
+		    LauncherI18n::T(LauncherI18n::Str::GameNotFoundBrowseFmt),
 		    config.gameExecutable.c_str());
-		StatusDialog::AppendLogf(L"\u542f\u52a8\u5668\u4f4d\u7f6e: %s",
+		StatusDialog::AppendLogf(LauncherI18n::T(LauncherI18n::Str::LauncherLocationFmt),
 		                       launcherDirectory.c_str());
 		return false;
 	}
@@ -442,16 +433,16 @@ bool LaunchGameExecutable() {
 	const auto gameExe = gameDirectory + L"\\" + config.gameExecutable;
 	if (!PathFileExistsW(gameExe.c_str())) {
 		StatusDialog::AppendLogf(
-		    L"\u672a\u627e\u5230\u6e38\u620f\u53ef\u6267\u884c\u6587\u4ef6: %s\\%s",
+		    LauncherI18n::T(LauncherI18n::Str::GameExeMissingFmt),
 		    gameDirectory.c_str(), config.gameExecutable.c_str());
 		return false;
 	}
 
 	WarnIfSecuRomPresent(gameExe);
 
-	StatusDialog::AppendLogf(L"\u6e38\u620f\u76ee\u5f55: %s", gameDirectory.c_str());
+	StatusDialog::AppendLogf(LauncherI18n::T(LauncherI18n::Str::GameDirectoryFmt), gameDirectory.c_str());
 	StatusDialog::AppendLog(
-	    L"\u6b63\u5728\u542f\u52a8 Mirror's Edge\uff08\u5185\u7f6e\u914d\u7f6e\u5b8c\u6574\u6027\u68c0\u67e5\u7ed5\u8fc7\uff09...");
+	    LauncherI18n::T(LauncherI18n::Str::StartingGame));
 
 	wchar_t gameRoot[MAX_PATH] = {};
 	wcsncpy(gameRoot, gameDirectory.c_str(), MAX_PATH - 1);
@@ -471,7 +462,7 @@ bool LaunchGameExecutable() {
 	}
 
 	StatusDialog::AppendLog(
-	    L"\u6e38\u620f\u5df2\u542f\u52a8\uff0c\u8bf7\u7b49\u5f85\u4e3b\u83dc\u5355\u51fa\u73b0\u3002");
+	    LauncherI18n::T(LauncherI18n::Str::GameStartedWaitMenu));
 	return true;
 }
 
@@ -480,11 +471,11 @@ bool CloseGameExecutable() {
 
 	if (!IsProcessRunning(config.gameProcessName.c_str())) {
 		StatusDialog::AppendLog(
-		    L"Mirror's Edge \u672a\u5728\u8fd0\u884c\uff0c\u65e0\u9700\u5173\u95ed\u3002");
+		    LauncherI18n::T(LauncherI18n::Str::GameNotRunningClose));
 		return true;
 	}
 
-	StatusDialog::AppendLog(L"\u6b63\u5728\u5f3a\u5236\u5173\u95ed\u6e38\u620f...");
+	StatusDialog::AppendLog(LauncherI18n::T(LauncherI18n::Str::ForceClosingGame));
 
 	int closedCount = 0;
 	while (true) {
@@ -496,7 +487,7 @@ bool CloseGameExecutable() {
 		const auto process =
 		    OpenProcess(PROCESS_TERMINATE, FALSE, entry.th32ProcessID);
 		if (!process) {
-			StatusDialog::AppendLogf(L"\u65e0\u6cd5\u6253\u5f00\u6e38\u620f\u8fdb\u7a0b (\u9519\u8bef %u)\u3002",
+			StatusDialog::AppendLogf(LauncherI18n::T(LauncherI18n::Str::OpenProcessFailFmt),
 			                       GetLastError());
 			return false;
 		}
@@ -504,7 +495,7 @@ bool CloseGameExecutable() {
 		const auto terminated = TerminateProcess(process, 0) != FALSE;
 		CloseHandle(process);
 		if (!terminated) {
-			StatusDialog::AppendLogf(L"\u65e0\u6cd5\u7ec8\u6b62\u6e38\u620f\u8fdb\u7a0b (\u9519\u8bef %u)\u3002",
+			StatusDialog::AppendLogf(LauncherI18n::T(LauncherI18n::Str::TerminateFailFmt),
 			                       GetLastError());
 			return false;
 		}
@@ -512,7 +503,7 @@ bool CloseGameExecutable() {
 		++closedCount;
 	}
 
-	StatusDialog::AppendLogf(L"\u6e38\u620f\u5df2\u5f3a\u5236\u5173\u95ed (%d \u4e2a\u8fdb\u7a0b)\u3002",
+	StatusDialog::AppendLogf(LauncherI18n::T(LauncherI18n::Str::ForceClosedFmt),
 	                       closedCount);
 	InputRestore::ScheduleRestoreBurst(StatusDialog::GetMainWindow());
 	return true;

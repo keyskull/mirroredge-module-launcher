@@ -346,6 +346,20 @@ bool LoadOrCreateRoot(const std::wstring &path, const std::wstring &gameRootHint
 namespace DeploySettings {
 
 bool ResolveSettingsPath(std::wstring &path, const std::wstring &gameRootHint) {
+	// Canonical location: next to ModuleLauncher.exe (dist / install root).
+	// When hosted by MirrorsEdge.exe, callers pass gameRootHint so we resolve
+	// the same folder where the launcher is deployed (<gameRoot>\settings.json).
+	wchar_t modulePath[MAX_PATH] = {};
+	if (GetModuleFileNameW(nullptr, modulePath, MAX_PATH)) {
+		const wchar_t *exeName = PathFindFileNameW(modulePath);
+		if (exeName && _wcsicmp(exeName, L"ModuleLauncher.exe") == 0) {
+			PathRemoveFileSpecW(modulePath);
+			path = std::wstring(modulePath) + L"\\" +
+			       Utf8ToWide(MMOD_SETTINGS_JSON_FILENAME);
+			return true;
+		}
+	}
+
 	if (!gameRootHint.empty()) {
 		path = gameRootHint + L"\\" + Utf8ToWide(MMOD_SETTINGS_JSON_FILENAME);
 		return true;
@@ -419,17 +433,16 @@ bool LoadGameRoot(std::wstring &gameRoot) {
 }
 
 bool SaveGameRoot(const std::wstring &gameRoot) {
-	std::wstring oldPath;
-	ResolveSettingsPath(oldPath, {});
+	std::wstring path;
+	if (!ResolveSettingsPath(path, {})) {
+		return false;
+	}
 
 	json root;
-	LoadOrCreateRoot(oldPath, gameRoot, root);
+	LoadOrCreateRoot(path, gameRoot, root);
 	auto &launcher = EnsureObject(root, "launcher");
 	launcher["gameRoot"] = WideToUtf8(gameRoot);
-
-	const std::wstring newPath =
-	    gameRoot + L"\\" + Utf8ToWide(MMOD_SETTINGS_JSON_FILENAME);
-	return SaveJsonRoot(newPath, root);
+	return SaveJsonRoot(path, root);
 }
 
 std::vector<std::string> LoadAutoLoadMods(const std::wstring &gameRootHint) {
@@ -564,6 +577,42 @@ bool SaveDismissedUpdateVersion(const std::string &version,
 	LoadOrCreateRoot(path, gameRootHint, root);
 	auto &launcher = EnsureObject(root, "launcher");
 	launcher["dismissedUpdateVersion"] = version;
+	return SaveJsonRoot(path, root);
+}
+
+bool LoadUiLanguage(std::string &out, const std::wstring &gameRootHint) {
+	std::wstring path;
+	if (!ResolveSettingsPath(path, gameRootHint)) {
+		return false;
+	}
+
+	json root;
+	if (!LoadOrCreateRoot(path, gameRootHint, root)) {
+		return false;
+	}
+
+	out.clear();
+	if (root.contains("launcher") && root["launcher"].is_object()) {
+		const auto &launcher = root["launcher"];
+		if (launcher.contains("uiLanguage") &&
+		    launcher["uiLanguage"].is_string()) {
+			out = launcher["uiLanguage"].get<std::string>();
+		}
+	}
+	return true;
+}
+
+bool SaveUiLanguage(const std::string &language,
+                    const std::wstring &gameRootHint) {
+	std::wstring path;
+	if (!ResolveSettingsPath(path, gameRootHint)) {
+		return false;
+	}
+
+	json root;
+	LoadOrCreateRoot(path, gameRootHint, root);
+	auto &launcher = EnsureObject(root, "launcher");
+	launcher["uiLanguage"] = language;
 	return SaveJsonRoot(path, root);
 }
 

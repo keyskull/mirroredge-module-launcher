@@ -49,7 +49,7 @@ This repository maintains **structured technical documentation** under [`docs/`]
 - **Injection timing** — launcher waits for `Local\module_manager_ready` or toolhelp module snapshot; there is **no** remote inject worker and **no** `game_probe.cpp` memory scan.
 - **D3D9 hook safety**: after `d3d9.dll` loads, never hook `Direct3DCreate9` or scan live D3D device from the inject worker thread. Split mode: use proxy device via `OnProxyDeviceCreated`; never `FindDeviceSafe` when proxy active. Legacy mmultiplayer: `PeekMessage` bootstrap + lazy hooks (`legacy/mmultiplayer/engine.cpp` or `runtime/engine/engine.cpp`).
 - **Shared IPC names** live in `shared/module_contract.h` — single source of truth for launcher, mod, and proxy.
-- **Core settings** use `%TEMP%\core.settings` (user overrides). Launcher + mod auto-load use game-root **`settings.json`** (`launcher.*`, `mods.autoLoad`). Legacy `%TEMP%\mirroredge-launcher.settings` and `modules/core.config.json` `loader.autoModules` migrate on first read.
+- **Core settings** use `%TEMP%\core.settings` (user overrides). Launcher + mod auto-load use **`settings.json` next to `ModuleLauncher.exe`** (`launcher.*`, `mods.autoLoad`; when deployed into the game root this is `<gameRoot>\settings.json`). Legacy `%TEMP%\mirroredge-launcher.settings` and `modules/core.config.json` `loader.autoModules` migrate on first read.
 
 ## UE3 SDK fixes (`shared/me_sdk/`)
 

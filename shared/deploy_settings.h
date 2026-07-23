@@ -44,6 +44,10 @@ bool LoadDismissedUpdateVersion(std::string &out,
 bool SaveDismissedUpdateVersion(const std::string &version,
                                 const std::wstring &gameRootHint = {});
 
+bool LoadUiLanguage(std::string &out, const std::wstring &gameRootHint = {});
+bool SaveUiLanguage(const std::string &language,
+                    const std::wstring &gameRootHint = {});
+
 bool LoadDiagnosticsEnabled(bool &out, const std::wstring &gameRootHint = {});
 
 void MigrateLegacySettingsIfNeeded(const std::wstring &gameRootHint = {});

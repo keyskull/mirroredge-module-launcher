@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "launcher_i18n.h"
 
 #include "diagnostics_session.h"
 #include "deploy_settings.h"
@@ -199,10 +200,10 @@ bool PrepareForGameLaunch(const std::wstring &gameRoot) {
     }
 
 	StatusDialog::AppendLogf(
-	    L"\u8bca\u65ad\u65e5\u5fd7\u5df2\u542f\u7528 (session %S)\u3002\u6587\u4ef6: %s",
+	    LauncherI18n::T(LauncherI18n::Str::DiagnosticsEnabledFmt),
 	    sessionId.c_str(), sessionLog.c_str());
 	StatusDialog::AppendLog(
-	    L"  \u6536\u96c6\u5305: tools\\collect-diagnostics.ps1 -GameRoot <\u6e38\u620f\u76ee\u5f55>");
+	    LauncherI18n::T(LauncherI18n::Str::DiagnosticsCollectHint));
 
 	return true;
 }

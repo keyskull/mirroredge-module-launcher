@@ -184,6 +184,8 @@
 
     <ClCompile Include="launcher\launcher_settings.cpp" />
 
+    <ClCompile Include="launcher\launcher_i18n.cpp" />
+
     <ClCompile Include="shared\deploy_settings.cpp" />
 
     <ClCompile Include="launcher\log_server.cpp" />
@@ -217,6 +219,8 @@
     <ClInclude Include="launcher\injection_flow.h" />
 
     <ClInclude Include="launcher\launcher_settings.h" />
+
+    <ClInclude Include="launcher\launcher_i18n.h" />
 
     <ClInclude Include="launcher\log_server.h" />
 

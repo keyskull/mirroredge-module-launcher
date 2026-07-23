@@ -4,6 +4,7 @@
 #include "game_path.h"
 #include "input_restore.h"
 #include "launcher_settings.h"
+#include "launcher_i18n.h"
 #include "product_version.h"
 #include "update_check.h"
 #include "window_layout_settings.h"
@@ -38,6 +39,12 @@ enum ControlId : int {
 	kUpdateStatus = 1020,
 	kCheckUpdate = 1021,
 	kUpgradeNow = 1022,
+	kLanguageLabel = 1023,
+	kLanguage = 1024,
+	kTabs = 1025,
+	kConfigSyncStatus = 1026,
+	kApplyConfig = 1027,
+	kDeployStatus = 1028,
 };
 
 enum : UINT {
@@ -46,6 +53,7 @@ enum : UINT {
 	kMarkFinished = WM_APP + 3,
 	kAppendModLog = WM_APP + 4,
 	kUpdateCheckDone = WM_APP + 6,
+	kConfigSyncTimerId = 0xC501,
 };
 
 HWND g_window = nullptr;
@@ -71,6 +79,13 @@ HWND g_skipConfigIntegrity = nullptr;
 HWND g_updateStatus = nullptr;
 HWND g_checkUpdate = nullptr;
 HWND g_upgradeNow = nullptr;
+HWND g_languageLabel = nullptr;
+HWND g_language = nullptr;
+HWND g_tabs = nullptr;
+HWND g_configSyncStatus = nullptr;
+HWND g_applyConfig = nullptr;
+HWND g_deployStatus = nullptr;
+int g_currentTab = 0;
 HFONT g_font = nullptr;
 HFONT g_statusFont = nullptr;
 bool g_finished = false;
@@ -121,7 +136,7 @@ void UpdateCloseButton() {
 	}
 
 	EnableWindow(g_close, TRUE);
-	SetWindowTextW(g_close, L"\u5173\u95ed");
+	SetWindowTextW(g_close, LauncherI18n::T(LauncherI18n::Str::Close));
 }
 
 void CloseLauncherWindow(HWND hwnd) {
@@ -141,8 +156,7 @@ void UpdateGamePathField() {
 		return;
 	}
 
-	SetWindowTextW(g_gamePath,
-	               L"(\u672a\u627e\u5230\u6e38\u620f\u8def\u5f84\uff0c\u8bf7\u70b9\u51fb\u300c\u6d4f\u89c8\u300d)");
+	SetWindowTextW(g_gamePath, LauncherI18n::T(LauncherI18n::Str::GamePathMissingHint));
 }
 
 struct UpdateCheckResultPayload {
@@ -176,7 +190,7 @@ void ApplyUpdateCheckResult(const UpdateCheckResultPayload &payload) {
 		const bool soft = !payload.manual && !dismissed.empty() &&
 		                  dismissed == payload.info.version;
 		_snwprintf(line, 255,
-		           L"\u53d1\u73b0\u65b0\u7248\u672c %S\uff08\u5f53\u524d %S\uff09",
+		           LauncherI18n::T(LauncherI18n::Str::UpdateAvailableFmt),
 		           payload.info.version.c_str(),
 		           UpdateCheck::LocalVersionString().c_str());
 		line[255] = L'\0';
@@ -186,16 +200,16 @@ void ApplyUpdateCheckResult(const UpdateCheckResultPayload &payload) {
 		AppendLogLine(line);
 		if (soft) {
 			AppendLogLine(
-			    L"\u8be5\u7248\u672c\u66fe\u88ab\u5ffd\u7565\uff1b\u53ef\u70b9\u300c\u7acb\u5373\u5347\u7ea7\u300d\u3002");
+			    LauncherI18n::T(LauncherI18n::Str::UpdateDismissedHint));
 		} else if (!payload.manual) {
-			MessageBoxW(g_window, line, L"Mirror's Edge Module Launcher",
+			MessageBoxW(g_window, line, LauncherI18n::T(LauncherI18n::Str::AppTitle),
 			            MB_ICONINFORMATION | MB_OK);
 			LauncherSettings::SaveDismissedUpdateVersion(payload.info.version);
 		}
 		break;
 	}
 	case UpdateCheck::CheckStatus::UpToDate:
-		_snwprintf(line, 255, L"\u5df2\u662f\u6700\u65b0\u7248\u672c %S",
+		_snwprintf(line, 255, LauncherI18n::T(LauncherI18n::Str::UpToDateFmt),
 		           UpdateCheck::LocalVersionString().c_str());
 		line[255] = L'\0';
 		if (g_updateStatus) {
@@ -209,28 +223,28 @@ void ApplyUpdateCheckResult(const UpdateCheckResultPayload &payload) {
 		if (g_updateStatus) {
 			SetWindowTextW(
 			    g_updateStatus,
-			    L"\u6682\u65e0 GitHub Release\uff08\u65e0\u6cd5\u68c0\u6d4b\u66f4\u65b0\uff09");
+			    LauncherI18n::T(LauncherI18n::Str::NoGithubRelease));
 		}
 		if (payload.manual) {
 			AppendLogLine(
-			    L"\u68c0\u67e5\u66f4\u65b0\uff1a\u4ed3\u5e93\u5c1a\u65e0 Release\u3002");
+			    LauncherI18n::T(LauncherI18n::Str::NoReleaseLog));
 		}
 		break;
 	case UpdateCheck::CheckStatus::Skipped:
 		if (g_updateStatus) {
 			SetWindowTextW(g_updateStatus,
-			               L"\u5df2\u8df3\u8fc7\u81ea\u52a8\u68c0\u67e5\u66f4\u65b0");
+			               LauncherI18n::T(LauncherI18n::Str::UpdateSkipped));
 		}
 		break;
 	default:
 		if (g_updateStatus) {
 			SetWindowTextW(
 			    g_updateStatus,
-			    L"\u68c0\u67e5\u66f4\u65b0\u5931\u8d25\uff08\u79bb\u7ebf\u6216\u7f51\u7edc\u9519\u8bef\uff09");
+			    LauncherI18n::T(LauncherI18n::Str::UpdateCheckFailed));
 		}
 		if (payload.manual || !payload.info.errorMessage.empty()) {
 			AppendLogLine(
-			    (L"\u68c0\u67e5\u66f4\u65b0\u5931\u8d25: " + payload.info.errorMessage)
+			    (std::wstring(LauncherI18n::T(LauncherI18n::Str::UpdateCheckFailedPrefix)) + payload.info.errorMessage)
 			        .c_str());
 		}
 		break;
@@ -269,11 +283,11 @@ DWORD WINAPI UpdateCheckWorker(LPVOID param) {
 
 void BeginUpdateCheck(bool manual) {
 	if (g_updateBusy.exchange(true)) {
-		AppendLogLine(L"\u66f4\u65b0\u68c0\u67e5\u5df2\u5728\u8fdb\u884c\u4e2d\u2026");
+		AppendLogLine(LauncherI18n::T(LauncherI18n::Str::UpdateCheckBusy));
 		return;
 	}
 	if (g_updateStatus) {
-		SetWindowTextW(g_updateStatus, L"\u6b63\u5728\u68c0\u67e5\u66f4\u65b0\u2026");
+		SetWindowTextW(g_updateStatus, LauncherI18n::T(LauncherI18n::Str::CheckingUpdate));
 	}
 	if (g_checkUpdate) {
 		EnableWindow(g_checkUpdate, FALSE);
@@ -289,7 +303,7 @@ void BeginUpdateCheck(bool manual) {
 		delete args;
 		g_updateBusy = false;
 		SetUpdateUiIdle();
-		AppendLogLine(L"\u65e0\u6cd5\u542f\u52a8\u66f4\u65b0\u68c0\u67e5\u7ebf\u7a0b\u3002");
+		AppendLogLine(LauncherI18n::T(LauncherI18n::Str::UpdateThreadFail));
 		return;
 	}
 	CloseHandle(thread);
@@ -308,10 +322,10 @@ DWORD WINAPI UpgradeWorker(LPVOID) {
 	if (UpdateCheck::BlockingProcessesRunning(&blocking)) {
 		wchar_t msg[256] = {};
 		_snwprintf(msg, 255,
-		           L"\u8bf7\u5148\u5173\u95ed %s \u540e\u518d\u5347\u7ea7\u3002",
+		           LauncherI18n::T(LauncherI18n::Str::CloseBeforeUpgradeFmt),
 		           blocking.c_str());
 		msg[255] = L'\0';
-		MessageBoxW(g_window, msg, L"Mirror's Edge Module Launcher",
+		MessageBoxW(g_window, msg, LauncherI18n::T(LauncherI18n::Str::AppTitle),
 		            MB_ICONWARNING | MB_OK);
 		g_updateBusy = false;
 		PostMessageW(g_window, kUpdateCheckDone, 1, 0);
@@ -324,23 +338,23 @@ DWORD WINAPI UpgradeWorker(LPVOID) {
 	    std::wstring(temp) + L"mirroredge-launcher-update.zip";
 
 	StatusDialog::AppendLog(
-	    L"\u6b63\u5728\u4e0b\u8f7d\u6700\u65b0 Release\u2026");
+	    LauncherI18n::T(LauncherI18n::Str::DownloadingRelease));
 	std::wstring err;
 	if (!UpdateCheck::DownloadFile(g_latestRelease.downloadUrl, zipFile,
 	                               &err)) {
-		StatusDialog::AppendLog((L"\u4e0b\u8f7d\u5931\u8d25: " + err).c_str());
+		StatusDialog::AppendLog((std::wstring(LauncherI18n::T(LauncherI18n::Str::DownloadFailedPrefix)) + err).c_str());
 		g_updateBusy = false;
 		PostMessageW(g_window, kUpdateCheckDone, 1, 0);
 		return 1;
 	}
 
 	StatusDialog::AppendLog(
-	    L"\u6b63\u5728\u89e3\u538b\u5e76\u51c6\u5907\u66ff\u6362\u6587\u4ef6\u2026");
+	    LauncherI18n::T(LauncherI18n::Str::UnpackingUpdate));
 	std::wstring batPath;
 	if (!UpdateCheck::PrepareApplyUpdate(zipFile, GetCurrentProcessId(), batPath,
 	                                     &err)) {
 		StatusDialog::AppendLog(
-		    (L"\u51c6\u5907\u5347\u7ea7\u5931\u8d25: " + err).c_str());
+		    (std::wstring(LauncherI18n::T(LauncherI18n::Str::PrepareUpgradeFailedPrefix)) + err).c_str());
 		g_updateBusy = false;
 		PostMessageW(g_window, kUpdateCheckDone, 1, 0);
 		return 1;
@@ -348,8 +362,8 @@ DWORD WINAPI UpgradeWorker(LPVOID) {
 
 	const int confirm = MessageBoxW(
 	    g_window,
-	    L"\u4e0b\u8f7d\u5b8c\u6210\u3002\u542f\u52a8\u5668\u5c06\u9000\u51fa\u5e76\u81ea\u52a8\u5b89\u88c5\u65b0\u7248\u672c\uff0c\u7136\u540e\u91cd\u542f\u3002\u7ee7\u7eed\uff1f",
-	    L"Mirror's Edge Module Launcher", MB_ICONQUESTION | MB_YESNO);
+	    LauncherI18n::T(LauncherI18n::Str::ConfirmApplyUpdate),
+	    LauncherI18n::T(LauncherI18n::Str::AppTitle), MB_ICONQUESTION | MB_YESNO);
 	if (confirm != IDYES) {
 		g_updateBusy = false;
 		PostMessageW(g_window, kUpdateCheckDone, 1, 0);
@@ -358,14 +372,14 @@ DWORD WINAPI UpgradeWorker(LPVOID) {
 
 	if (!UpdateCheck::LaunchApplyBat(batPath, &err)) {
 		StatusDialog::AppendLog(
-		    (L"\u542f\u52a8\u5347\u7ea7\u811a\u672c\u5931\u8d25: " + err).c_str());
+		    (std::wstring(LauncherI18n::T(LauncherI18n::Str::LaunchBatFailedPrefix)) + err).c_str());
 		g_updateBusy = false;
 		PostMessageW(g_window, kUpdateCheckDone, 1, 0);
 		return 1;
 	}
 
 	StatusDialog::AppendLog(
-	    L"\u6b63\u5728\u5e94\u7528\u5347\u7ea7\u5e76\u91cd\u542f\u2026");
+	    LauncherI18n::T(LauncherI18n::Str::ApplyingUpdate));
 	StatusDialog::RequestExit();
 	if (g_window) {
 		PostMessageW(g_window, WM_CLOSE, 0, 0);
@@ -387,14 +401,13 @@ void BeginUpgrade() {
 	if (!thread) {
 		g_updateBusy = false;
 		SetUpdateUiIdle();
-		AppendLogLine(L"\u65e0\u6cd5\u542f\u52a8\u5347\u7ea7\u7ebf\u7a0b\u3002");
+		AppendLogLine(LauncherI18n::T(LauncherI18n::Str::UpgradeThreadFail));
 		return;
 	}
 	CloseHandle(thread);
 }
 
 struct ResolutionPreset {
-	const wchar_t *label;
 	int width;
 	int height;
 };
@@ -402,22 +415,34 @@ struct ResolutionPreset {
 constexpr int kMatchWindowPresetWidth = -1;
 
 constexpr ResolutionPreset kWindowedResolutionPresets[] = {
-    {L"1920 x 1080", 1920, 1080},
-    {L"1600 x 1200", 1600, 1200},
-    {L"1280 x 720", 1280, 720},
-    {L"1280 x 1024", 1280, 1024},
-    {L"\u81ea\u5b9a\u4e49 (Custom)", 0, 0},
+    {1920, 1080},
+    {1600, 1200},
+    {1280, 720},
+    {1280, 1024},
+    {0, 0},
 };
 
 constexpr ResolutionPreset kBorderlessResolutionPresets[] = {
-    {L"\u5339\u914d\u7a97\u53e3 (Match window)", kMatchWindowPresetWidth,
-     kMatchWindowPresetWidth},
-    {L"1920 x 1080", 1920, 1080},
-    {L"1600 x 1200", 1600, 1200},
-    {L"1280 x 720", 1280, 720},
-    {L"1280 x 1024", 1280, 1024},
-    {L"\u81ea\u5b9a\u4e49 (Custom)", 0, 0},
+    {kMatchWindowPresetWidth, kMatchWindowPresetWidth},
+    {1920, 1080},
+    {1600, 1200},
+    {1280, 720},
+    {1280, 1024},
+    {0, 0},
 };
+
+std::wstring FormatResolutionPresetLabel(const ResolutionPreset &preset) {
+	if (preset.width == kMatchWindowPresetWidth) {
+		return LauncherI18n::T(LauncherI18n::Str::PresetMatchWindow);
+	}
+	if (preset.width <= 0 || preset.height <= 0) {
+		return LauncherI18n::T(LauncherI18n::Str::PresetCustom);
+	}
+	wchar_t buffer[64] = {};
+	_snwprintf(buffer, 63, L"%d x %d", preset.width, preset.height);
+	buffer[63] = L'\0';
+	return buffer;
+}
 
 bool IsBorderlessModeSelected() {
 	if (!g_displayMode) {
@@ -459,8 +484,9 @@ void PopulateResolutionPresetCombo() {
 	size_t count = 0;
 	const auto *presets = GetActiveResolutionPresets(count);
 	for (size_t i = 0; i < count; ++i) {
+		const std::wstring label = FormatResolutionPresetLabel(presets[i]);
 		SendMessageW(g_resolutionPreset, CB_ADDSTRING, 0,
-		             reinterpret_cast<LPARAM>(presets[i].label));
+		             reinterpret_cast<LPARAM>(label.c_str()));
 	}
 }
 
@@ -601,6 +627,280 @@ void UpdateBorderlessControlsEnabled() {
 	}
 }
 
+
+void PopulateDisplayModeCombo() {
+	if (!g_displayMode) {
+		return;
+	}
+	const auto sel = static_cast<int>(SendMessageW(g_displayMode, CB_GETCURSEL, 0, 0));
+	SendMessageW(g_displayMode, CB_RESETCONTENT, 0, 0);
+	SendMessageW(g_displayMode, CB_ADDSTRING, 0,
+	             reinterpret_cast<LPARAM>(LauncherI18n::T(LauncherI18n::Str::ModeWindowed)));
+	SendMessageW(g_displayMode, CB_ADDSTRING, 0,
+	             reinterpret_cast<LPARAM>(LauncherI18n::T(LauncherI18n::Str::ModeFullscreen)));
+	SendMessageW(g_displayMode, CB_ADDSTRING, 0,
+	             reinterpret_cast<LPARAM>(LauncherI18n::T(LauncherI18n::Str::ModeBorderless)));
+	if (sel >= 0) {
+		SendMessageW(g_displayMode, CB_SETCURSEL, static_cast<WPARAM>(sel), 0);
+	}
+}
+
+
+void SetControlsVisible(const HWND *handles, size_t count, bool visible) {
+	const int cmd = visible ? SW_SHOW : SW_HIDE;
+	for (size_t i = 0; i < count; ++i) {
+		if (handles[i]) {
+			ShowWindow(handles[i], cmd);
+		}
+	}
+}
+
+// Tab headers must stay clickable, but the tab body must not sit above page
+// controls — otherwise after a tab click, Browse/path stop receiving mouse input.
+void SendTabControlToBack() {
+	if (!g_tabs) {
+		return;
+	}
+	SetWindowPos(g_tabs, HWND_BOTTOM, 0, 0, 0, 0,
+	             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+}
+
+DisplaySettings ReadDisplaySettingsFromUi() {
+	DisplaySettings settings = LauncherSettings::LoadDisplaySettings();
+
+	if (g_displayMode) {
+		const auto mode =
+		    static_cast<int>(SendMessageW(g_displayMode, CB_GETCURSEL, 0, 0));
+		if (mode >= 0 && mode <= static_cast<int>(DisplayMode::Borderless)) {
+			settings.mode = static_cast<DisplayMode>(mode);
+		}
+	}
+
+	if (g_resolutionPreset) {
+		const bool borderless = settings.mode == DisplayMode::Borderless;
+		const auto presetIndex =
+		    static_cast<int>(SendMessageW(g_resolutionPreset, CB_GETCURSEL, 0, 0));
+		size_t count = 0;
+		const auto *presets = GetActiveResolutionPresets(count);
+
+		if (borderless) {
+			settings.renderMatchWindow = presetIndex == 0;
+		} else {
+			settings.renderMatchWindow = false;
+		}
+
+		if (!settings.renderMatchWindow && presetIndex >= 0 &&
+		    presetIndex < static_cast<int>(count) - 1) {
+			settings.resX = presets[presetIndex].width;
+			settings.resY = presets[presetIndex].height;
+		} else if (!settings.renderMatchWindow && g_resX && g_resY) {
+			wchar_t buffer[16] = {};
+			GetWindowTextW(g_resX, buffer, _countof(buffer));
+			settings.resX = _wtoi(buffer);
+			GetWindowTextW(g_resY, buffer, _countof(buffer));
+			settings.resY = _wtoi(buffer);
+		} else if (settings.renderMatchWindow) {
+			ComputeMatchWindowResolution(settings.resX, settings.resY);
+		}
+	}
+
+	if (g_scale) {
+		const auto scalePercent =
+		    static_cast<int>(SendMessageW(g_scale, TBM_GETPOS, 0, 0));
+		settings.scale = static_cast<float>(scalePercent) / 100.0f;
+	}
+
+	if (g_skipStartup) {
+		settings.skipStartupMovies =
+		    SendMessageW(g_skipStartup, BM_GETCHECK, 0, 0) == BST_CHECKED;
+	}
+
+	return settings;
+}
+
+void RefreshConfigSyncStatus() {
+	if (!g_window) {
+		return;
+	}
+
+	const auto expected = ReadDisplaySettingsFromUi();
+	const auto sync = GameConfig::EvaluateConfigSync(expected);
+
+	if (g_configSyncStatus) {
+		if (sync.displayMatched) {
+			SetWindowTextW(g_configSyncStatus,
+			               LauncherI18n::T(LauncherI18n::Str::ConfigSynced));
+		} else {
+			std::wstring reasons;
+			auto appendReason = [&](LauncherI18n::Str id) {
+				if (!reasons.empty()) {
+					reasons += L"; ";
+				}
+				reasons += LauncherI18n::T(id);
+			};
+			if (!sync.tdEngineOk) {
+				appendReason(LauncherI18n::Str::ConfigReasonTdMissing);
+			} else if (!sync.tdContentOk) {
+				appendReason(LauncherI18n::Str::ConfigReasonDisplay);
+			}
+			if (!sync.windowLayoutOk) {
+				appendReason(LauncherI18n::Str::ConfigReasonWindow);
+			}
+			if (reasons.empty()) {
+				appendReason(LauncherI18n::Str::ConfigReasonDisplay);
+			}
+
+			wchar_t line[256] = {};
+			_snwprintf(line, 255, L"%s (%s)",
+			           LauncherI18n::T(LauncherI18n::Str::ConfigUnsyncedPrefix),
+			           reasons.c_str());
+			line[255] = L'\0';
+			SetWindowTextW(g_configSyncStatus, line);
+		}
+	}
+
+	if (g_applyConfig) {
+		EnableWindow(g_applyConfig, sync.displayMatched ? FALSE : TRUE);
+	}
+
+	if (g_deployStatus) {
+		wchar_t line[256] = {};
+		_snwprintf(line, 255,
+		           LauncherI18n::T(LauncherI18n::Str::DeployStatusFmt),
+		           sync.proxyPresent
+		               ? LauncherI18n::T(LauncherI18n::Str::DeployPresent)
+		               : LauncherI18n::T(LauncherI18n::Str::DeployAbsent),
+		           sync.managerPresent
+		               ? LauncherI18n::T(LauncherI18n::Str::DeployPresent)
+		               : LauncherI18n::T(LauncherI18n::Str::DeployAbsent));
+		line[255] = L'\0';
+		SetWindowTextW(g_deployStatus, line);
+	}
+}
+
+void ShowTabPage(int index) {
+	const HWND launchControls[] = {
+	    g_gamePathLabel, g_gamePath, g_browseGamePath, g_skipStartup,
+	    g_skipConfigIntegrity, g_deployStatus,
+	};
+	const HWND displayControls[] = {
+	    g_displayModeLabel, g_displayMode, g_resolutionLabel, g_resolutionPreset,
+	    g_resX,            g_resY,        g_scaleLabel,      g_scale,
+	    g_scaleValue,      g_configSyncStatus, g_applyConfig,
+	};
+	const HWND updateControls[] = {
+	    g_updateStatus, g_checkUpdate, g_upgradeNow,
+	};
+
+	SetControlsVisible(launchControls, _countof(launchControls), index == 0);
+	SetControlsVisible(displayControls, _countof(displayControls), index == 1);
+	SetControlsVisible(updateControls, _countof(updateControls), index == 2);
+	g_currentTab = index;
+	SendTabControlToBack();
+
+	if (index == 1) {
+		UpdateBorderlessControlsEnabled();
+		UpdateResolutionFieldsEnabled();
+	}
+	RefreshConfigSyncStatus();
+}
+
+void RefreshTabTitles() {
+	if (!g_tabs) {
+		return;
+	}
+	TCITEMW item = {};
+	item.mask = TCIF_TEXT;
+	const wchar_t *titles[] = {
+	    LauncherI18n::T(LauncherI18n::Str::TabLaunch),
+	    LauncherI18n::T(LauncherI18n::Str::TabDisplay),
+	    LauncherI18n::T(LauncherI18n::Str::TabUpdate),
+	};
+	for (int i = 0; i < 3; ++i) {
+		item.pszText = const_cast<wchar_t *>(titles[i]);
+		TabCtrl_SetItem(g_tabs, i, &item);
+	}
+}
+
+void PopulateLanguageCombo() {
+	if (!g_language) {
+		return;
+	}
+	SendMessageW(g_language, CB_RESETCONTENT, 0, 0);
+	SendMessageW(g_language, CB_ADDSTRING, 0,
+	             reinterpret_cast<LPARAM>(LauncherI18n::LanguageDisplayName(LauncherI18n::Lang::Zh)));
+	SendMessageW(g_language, CB_ADDSTRING, 0,
+	             reinterpret_cast<LPARAM>(LauncherI18n::LanguageDisplayName(LauncherI18n::Lang::En)));
+	const auto sel = LauncherI18n::Current() == LauncherI18n::Lang::En ? 1 : 0;
+	SendMessageW(g_language, CB_SETCURSEL, static_cast<WPARAM>(sel), 0);
+}
+
+void ApplyLocalizedUi() {
+	wchar_t windowTitle[128] = {};
+	_snwprintf(windowTitle, 127, L"%s v%hs", LauncherI18n::T(LauncherI18n::Str::AppTitle),
+	           MMOD_PRODUCT_VERSION_STRING);
+	windowTitle[127] = L'\0';
+	if (g_window) {
+		SetWindowTextW(g_window, windowTitle);
+	}
+	if (g_gamePathLabel) {
+		SetWindowTextW(g_gamePathLabel, LauncherI18n::T(LauncherI18n::Str::GamePath));
+	}
+	if (g_browseGamePath) {
+		SetWindowTextW(g_browseGamePath, LauncherI18n::T(LauncherI18n::Str::Browse));
+	}
+	if (g_displayModeLabel) {
+		SetWindowTextW(g_displayModeLabel, LauncherI18n::T(LauncherI18n::Str::DisplayMode));
+	}
+	if (g_resolutionLabel) {
+		SetWindowTextW(g_resolutionLabel, LauncherI18n::T(LauncherI18n::Str::RenderResolution));
+	}
+	if (g_scaleLabel) {
+		SetWindowTextW(g_scaleLabel, LauncherI18n::T(LauncherI18n::Str::WindowScalePct));
+	}
+	if (g_skipStartup) {
+		SetWindowTextW(g_skipStartup, LauncherI18n::T(LauncherI18n::Str::SkipIntroMovies));
+	}
+	if (g_skipConfigIntegrity) {
+		SetWindowTextW(g_skipConfigIntegrity, LauncherI18n::T(LauncherI18n::Str::SkipIniIntegrity));
+	}
+	if (g_updateStatus && !g_updateBusy.load() && !g_hasLatestRelease) {
+		SetWindowTextW(g_updateStatus, LauncherI18n::T(LauncherI18n::Str::UpdateUnchecked));
+	}
+	if (g_checkUpdate) {
+		SetWindowTextW(g_checkUpdate, LauncherI18n::T(LauncherI18n::Str::CheckUpdate));
+	}
+	if (g_upgradeNow) {
+		SetWindowTextW(g_upgradeNow, LauncherI18n::T(LauncherI18n::Str::UpgradeNow));
+	}
+	if (g_launch) {
+		SetWindowTextW(g_launch, LauncherI18n::T(LauncherI18n::Str::LaunchGame));
+	}
+	if (g_closeGame) {
+		SetWindowTextW(g_closeGame, LauncherI18n::T(LauncherI18n::Str::CloseGame));
+	}
+	if (g_languageLabel) {
+		SetWindowTextW(g_languageLabel, LauncherI18n::T(LauncherI18n::Str::Language));
+	}
+	if (g_applyConfig) {
+		SetWindowTextW(g_applyConfig, LauncherI18n::T(LauncherI18n::Str::ApplyConfig));
+	}
+	UpdateCloseButton();
+	PopulateLanguageCombo();
+	PopulateDisplayModeCombo();
+	RefreshTabTitles();
+	ShowTabPage(g_currentTab);
+	const auto resSel = g_resolutionPreset
+	                        ? static_cast<int>(SendMessageW(g_resolutionPreset, CB_GETCURSEL, 0, 0))
+	                        : -1;
+	PopulateResolutionPresetCombo();
+	if (g_resolutionPreset && resSel >= 0) {
+		SendMessageW(g_resolutionPreset, CB_SETCURSEL, static_cast<WPARAM>(resSel), 0);
+	}
+	UpdateGamePathField();
+	RefreshConfigSyncStatus();
+}
+
 void LoadDisplaySettingsToUi() {
 	const auto settings = LauncherSettings::LoadDisplaySettings();
 
@@ -656,55 +956,7 @@ void LoadDisplaySettingsToUi() {
 }
 
 void SaveDisplaySettingsFromUi() {
-	DisplaySettings settings = LauncherSettings::LoadDisplaySettings();
-
-	if (g_displayMode) {
-		const auto mode =
-		    static_cast<int>(SendMessageW(g_displayMode, CB_GETCURSEL, 0, 0));
-		if (mode >= 0 && mode <= static_cast<int>(DisplayMode::Borderless)) {
-			settings.mode = static_cast<DisplayMode>(mode);
-		}
-	}
-
-	if (g_resolutionPreset) {
-		const bool borderless = settings.mode == DisplayMode::Borderless;
-		const auto presetIndex =
-		    static_cast<int>(SendMessageW(g_resolutionPreset, CB_GETCURSEL, 0, 0));
-		size_t count = 0;
-		const auto *presets = GetActiveResolutionPresets(count);
-
-		if (borderless) {
-			settings.renderMatchWindow = presetIndex == 0;
-		} else {
-			settings.renderMatchWindow = false;
-		}
-
-		if (!settings.renderMatchWindow && presetIndex >= 0 &&
-		    presetIndex < static_cast<int>(count) - 1) {
-			settings.resX = presets[presetIndex].width;
-			settings.resY = presets[presetIndex].height;
-		} else if (!settings.renderMatchWindow && g_resX && g_resY) {
-			wchar_t buffer[16] = {};
-			GetWindowTextW(g_resX, buffer, _countof(buffer));
-			settings.resX = _wtoi(buffer);
-			GetWindowTextW(g_resY, buffer, _countof(buffer));
-			settings.resY = _wtoi(buffer);
-		} else if (settings.renderMatchWindow) {
-			ComputeMatchWindowResolution(settings.resX, settings.resY);
-		}
-	}
-
-	if (g_scale) {
-		const auto scalePercent =
-		    static_cast<int>(SendMessageW(g_scale, TBM_GETPOS, 0, 0));
-		settings.scale = static_cast<float>(scalePercent) / 100.0f;
-	}
-
-	if (g_skipStartup) {
-		settings.skipStartupMovies =
-		    SendMessageW(g_skipStartup, BM_GETCHECK, 0, 0) == BST_CHECKED;
-	}
-
+	const DisplaySettings settings = ReadDisplaySettingsFromUi();
 	LauncherSettings::SaveDisplaySettings(settings);
 
 	if (g_skipConfigIntegrity) {
@@ -768,6 +1020,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam,
 			}
 			return 0;
 		}
+		if (wparam == kConfigSyncTimerId) {
+			if (IsWindowVisible(hwnd) && !IsIconic(hwnd)) {
+				RefreshConfigSyncStatus();
+			}
+			return 0;
+		}
 		break;
 	}
 	case WM_HSCROLL: {
@@ -776,6 +1034,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam,
 			if (IsMatchWindowPresetSelected()) {
 				UpdateResolutionFieldsEnabled();
 			}
+			RefreshConfigSyncStatus();
+			return 0;
+		}
+		break;
+	}
+	case WM_NOTIFY: {
+		auto *hdr = reinterpret_cast<LPNMHDR>(lparam);
+		if (hdr && hdr->hwndFrom == g_tabs && hdr->code == TCN_SELCHANGE) {
+			ShowTabPage(TabCtrl_GetCurSel(g_tabs));
 			return 0;
 		}
 		break;
@@ -790,9 +1057,26 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam,
 					AppendLogLine(applyLog.c_str());
 				}
 			} else if (!applyLog.empty()) {
-				AppendLogLine((L"\u8b66\u544a\uff1a" + applyLog).c_str());
+				AppendLogLine((std::wstring(LauncherI18n::T(LauncherI18n::Str::WarningPrefix)) + applyLog).c_str());
 			}
+			RefreshConfigSyncStatus();
 			g_launchHandler();
+			return 0;
+		}
+		if (LOWORD(wparam) == kApplyConfig) {
+			SaveDisplaySettingsFromUi();
+			const auto displaySettings = LauncherSettings::LoadDisplaySettings();
+			std::wstring applyLog;
+			if (GameConfig::ApplyDisplaySettings(displaySettings, &applyLog)) {
+				if (!applyLog.empty()) {
+					AppendLogLine(applyLog.c_str());
+				}
+			} else if (!applyLog.empty()) {
+				AppendLogLine((std::wstring(LauncherI18n::T(LauncherI18n::Str::WarningPrefix)) +
+				               applyLog)
+				                  .c_str());
+			}
+			RefreshConfigSyncStatus();
 			return 0;
 		}
 		if (LOWORD(wparam) == kCloseGame && g_closeGameHandler) {
@@ -802,8 +1086,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam,
 		if (LOWORD(wparam) == kBrowseGamePath) {
 			std::wstring gameRoot;
 			if (GamePath::BrowseForGameRoot(hwnd, gameRoot)) {
-				UpdateGamePathField();
-				AppendLogLine((L"\u6e38\u620f\u8def\u5f84\u5df2\u4fdd\u5b58: " + gameRoot).c_str());
+				if (g_gamePath) {
+					SetWindowTextW(g_gamePath, gameRoot.c_str());
+				}
+				AppendLogLine((std::wstring(LauncherI18n::T(LauncherI18n::Str::PathSavedPrefix)) + gameRoot).c_str());
+				RefreshConfigSyncStatus();
 			}
 			return 0;
 		}
@@ -815,14 +1102,37 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam,
 			BeginUpgrade();
 			return 0;
 		}
+		if (LOWORD(wparam) == kLanguage && HIWORD(wparam) == CBN_SELCHANGE) {
+			const auto sel =
+			    static_cast<int>(SendMessageW(g_language, CB_GETCURSEL, 0, 0));
+			const auto lang = sel == 1 ? LauncherI18n::Lang::En : LauncherI18n::Lang::Zh;
+			if (lang != LauncherI18n::Current()) {
+				LauncherI18n::SetLanguage(lang);
+				ApplyLocalizedUi();
+			}
+			return 0;
+		}
 		if (LOWORD(wparam) == kDisplayMode && HIWORD(wparam) == CBN_SELCHANGE) {
 			UpdateBorderlessControlsEnabled();
+			RefreshConfigSyncStatus();
 			return 0;
 		}
 		if (LOWORD(wparam) == kResolutionPreset && HIWORD(wparam) == CBN_SELCHANGE) {
 			const auto presetIndex = static_cast<int>(
 			    SendMessageW(g_resolutionPreset, CB_GETCURSEL, 0, 0));
 			ApplyResolutionPresetToFields(presetIndex);
+			RefreshConfigSyncStatus();
+			return 0;
+		}
+		if ((LOWORD(wparam) == kSkipStartup ||
+		     LOWORD(wparam) == kSkipConfigIntegrity) &&
+		    HIWORD(wparam) == BN_CLICKED) {
+			RefreshConfigSyncStatus();
+			return 0;
+		}
+		if ((LOWORD(wparam) == kResX || LOWORD(wparam) == kResY) &&
+		    HIWORD(wparam) == EN_CHANGE) {
+			RefreshConfigSyncStatus();
 			return 0;
 		}
 		if (LOWORD(wparam) == kClose) {
@@ -836,6 +1146,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam,
 		return 0;
 	}
 	case WM_DESTROY: {
+		KillTimer(hwnd, kConfigSyncTimerId);
 		PostQuitMessage(0);
 		return 0;
 	}
@@ -878,7 +1189,10 @@ void Create() {
 		return;
 	}
 
-	INITCOMMONCONTROLSEX controls = {sizeof(controls), ICC_STANDARD_CLASSES};
+	LauncherI18n::Initialize();
+
+	INITCOMMONCONTROLSEX controls = {sizeof(controls),
+	                                 ICC_STANDARD_CLASSES | ICC_TAB_CLASSES};
 	InitCommonControlsEx(&controls);
 
 	const auto instance = GetModuleHandleW(nullptr);
@@ -893,7 +1207,7 @@ void Create() {
 	RegisterClassExW(&windowClass);
 
 	wchar_t windowTitle[128] = {};
-	_snwprintf(windowTitle, 127, L"Mirror's Edge Module Launcher v%hs",
+	_snwprintf(windowTitle, 127, L"%s v%hs", LauncherI18n::T(LauncherI18n::Str::AppTitle),
 	           MMOD_PRODUCT_VERSION_STRING);
 	windowTitle[127] = L'\0';
 
@@ -901,13 +1215,11 @@ void Create() {
 	    WS_EX_APPWINDOW, className,
 	    windowTitle,
 	    WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT,
-	    CW_USEDEFAULT, 640, 620, nullptr, nullptr, instance, nullptr);
+	    CW_USEDEFAULT, 640, 560, nullptr, nullptr, instance, nullptr);
 
 	if (!g_window) {
-		MessageBoxW(nullptr,
-		            L"\u65e0\u6cd5\u521b\u5efa\u542f\u52a8\u5668\u7a97\u53e3\u3002\u8bf7\u4ee5\u7ba1\u7406\u5458\u8eab\u4efd\u8fd0\u884c "
-		            L"ModuleLauncher.bat\u3002",
-		            L"Mirror's Edge Module Launcher", MB_ICONERROR | MB_OK);
+		MessageBoxW(nullptr, LauncherI18n::T(LauncherI18n::Str::CreateWindowFailed),
+		            LauncherI18n::T(LauncherI18n::Str::AppTitle), MB_ICONERROR | MB_OK);
 		return;
 	}
 
@@ -921,126 +1233,179 @@ void Create() {
 	    DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
 
 	g_status = CreateWindowExW(
-	    0, L"STATIC", L"\u51c6\u5907\u4e2d...",
-	    WS_CHILD | WS_VISIBLE | SS_LEFT, 12, 12, 600, 28, g_window,
+	    0, L"STATIC", LauncherI18n::T(LauncherI18n::Str::PreparingEllipsis),
+	    WS_CHILD | WS_VISIBLE | SS_LEFT, 12, 12, 400, 28, g_window,
 	    reinterpret_cast<HMENU>(kStatus), instance, nullptr);
 
+	g_languageLabel = CreateWindowExW(
+	    0, L"STATIC", LauncherI18n::T(LauncherI18n::Str::Language),
+	    WS_CHILD | WS_VISIBLE | SS_RIGHT, 400, 16, 72, 20, g_window,
+	    reinterpret_cast<HMENU>(kLanguageLabel), instance, nullptr);
+
+	g_language = CreateWindowExW(
+	    0, L"COMBOBOX", L"",
+	    WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, 476, 12, 136,
+	    120, g_window, reinterpret_cast<HMENU>(kLanguage), instance, nullptr);
+
+	const int tabX = 12;
+	const int tabY = 42;
+	const int tabW = 600;
+	const int tabH = 180;
+
+	g_tabs = CreateWindowExW(
+	    0, WC_TABCONTROLW, L"",
+	    WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS, tabX, tabY, tabW, tabH, g_window,
+	    reinterpret_cast<HMENU>(kTabs), instance, nullptr);
+
+	TCITEMW tabItem = {};
+	tabItem.mask = TCIF_TEXT;
+	tabItem.pszText = const_cast<wchar_t *>(LauncherI18n::T(LauncherI18n::Str::TabLaunch));
+	TabCtrl_InsertItem(g_tabs, 0, &tabItem);
+	tabItem.pszText = const_cast<wchar_t *>(LauncherI18n::T(LauncherI18n::Str::TabDisplay));
+	TabCtrl_InsertItem(g_tabs, 1, &tabItem);
+	tabItem.pszText = const_cast<wchar_t *>(LauncherI18n::T(LauncherI18n::Str::TabUpdate));
+	TabCtrl_InsertItem(g_tabs, 2, &tabItem);
+
+	RECT contentRc = {0, 0, tabW, tabH};
+	TabCtrl_AdjustRect(g_tabs, FALSE, &contentRc);
+	MapWindowPoints(g_tabs, g_window, reinterpret_cast<POINT *>(&contentRc), 2);
+	const int cx = contentRc.left + 10;
+	const int cy = contentRc.top + 10;
+	const int cw = contentRc.right - contentRc.left - 20;
+
 	g_gamePathLabel = CreateWindowExW(
-	    0, L"STATIC", L"\u6e38\u620f\u8def\u5f84:",
-	    WS_CHILD | WS_VISIBLE | SS_LEFT, 12, 42, 80, 20, g_window,
+	    0, L"STATIC", LauncherI18n::T(LauncherI18n::Str::GamePath),
+	    WS_CHILD | WS_VISIBLE | SS_LEFT, cx, cy, 80, 20, g_window,
 	    reinterpret_cast<HMENU>(kGamePathLabel), instance, nullptr);
 
 	g_gamePath = CreateWindowExW(
 	    WS_EX_CLIENTEDGE, L"EDIT", L"",
-	    WS_CHILD | WS_VISIBLE | ES_LEFT | ES_READONLY | ES_AUTOHSCROLL, 96, 40,
-	    430, 22, g_window, reinterpret_cast<HMENU>(kGamePath), instance,
-	    nullptr);
+	    WS_CHILD | WS_VISIBLE | ES_LEFT | ES_READONLY | ES_AUTOHSCROLL, cx + 84,
+	    cy - 2, cw - 170, 22, g_window, reinterpret_cast<HMENU>(kGamePath),
+	    instance, nullptr);
 
 	g_browseGamePath = CreateWindowExW(
-	    0, L"BUTTON", L"\u6d4f\u89c8...",
-	    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 532, 38, 80, 24, g_window,
-	    reinterpret_cast<HMENU>(kBrowseGamePath), instance, nullptr);
+	    0, L"BUTTON", LauncherI18n::T(LauncherI18n::Str::Browse),
+	    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, cx + cw - 80, cy - 4, 80, 24,
+	    g_window, reinterpret_cast<HMENU>(kBrowseGamePath), instance, nullptr);
+
+	g_skipStartup = CreateWindowExW(
+	    0, L"BUTTON", LauncherI18n::T(LauncherI18n::Str::SkipIntroMovies),
+	    WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, cx, cy + 30, cw, 22, g_window,
+	    reinterpret_cast<HMENU>(kSkipStartup), instance, nullptr);
+
+	g_skipConfigIntegrity = CreateWindowExW(
+	    0, L"BUTTON", LauncherI18n::T(LauncherI18n::Str::SkipIniIntegrity),
+	    WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, cx, cy + 54, cw, 22, g_window,
+	    reinterpret_cast<HMENU>(kSkipConfigIntegrity), instance, nullptr);
+
+	g_deployStatus = CreateWindowExW(
+	    0, L"STATIC", L"",
+	    WS_CHILD | WS_VISIBLE | SS_LEFT, cx, cy + 82, cw, 20, g_window,
+	    reinterpret_cast<HMENU>(kDeployStatus), instance, nullptr);
 
 	g_displayModeLabel = CreateWindowExW(
-	    0, L"STATIC", L"\u663e\u793a\u6a21\u5f0f:",
-	    WS_CHILD | WS_VISIBLE | SS_LEFT, 12, 68, 72, 20, g_window,
+	    0, L"STATIC", LauncherI18n::T(LauncherI18n::Str::DisplayMode),
+	    WS_CHILD | SS_LEFT, cx, cy, 90, 20, g_window,
 	    reinterpret_cast<HMENU>(kDisplayModeLabel), instance, nullptr);
 
 	g_displayMode = CreateWindowExW(
 	    0, L"COMBOBOX", L"",
-	    WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, 88, 66, 160,
-	    200, g_window, reinterpret_cast<HMENU>(kDisplayMode), instance, nullptr);
+	    WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL, cx + 94, cy - 2, 180, 200,
+	    g_window, reinterpret_cast<HMENU>(kDisplayMode), instance, nullptr);
 
 	g_resolutionLabel = CreateWindowExW(
-	    0, L"STATIC", L"\u6e32\u67d3\u5206\u8fa8\u7387:",
-	    WS_CHILD | WS_VISIBLE | SS_LEFT, 260, 68, 72, 20, g_window,
+	    0, L"STATIC", LauncherI18n::T(LauncherI18n::Str::RenderResolution),
+	    WS_CHILD | SS_LEFT, cx, cy + 30, 90, 20, g_window,
 	    reinterpret_cast<HMENU>(kResolutionLabel), instance, nullptr);
 
 	g_resolutionPreset = CreateWindowExW(
 	    0, L"COMBOBOX", L"",
-	    WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, 320, 66, 140,
-	    200, g_window, reinterpret_cast<HMENU>(kResolutionPreset), instance,
-	    nullptr);
+	    WS_CHILD | CBS_DROPDOWNLIST | WS_VSCROLL, cx + 94, cy + 28, 200, 200,
+	    g_window, reinterpret_cast<HMENU>(kResolutionPreset), instance, nullptr);
 
 	g_resX = CreateWindowExW(
 	    WS_EX_CLIENTEDGE, L"EDIT", L"1920",
-	    WS_CHILD | WS_VISIBLE | ES_NUMBER | ES_CENTER, 466, 66, 52, 22,
-	    g_window, reinterpret_cast<HMENU>(kResX), instance, nullptr);
+	    WS_CHILD | ES_NUMBER | ES_CENTER, cx + 302, cy + 28, 52, 22, g_window,
+	    reinterpret_cast<HMENU>(kResX), instance, nullptr);
 
 	g_resY = CreateWindowExW(
 	    WS_EX_CLIENTEDGE, L"EDIT", L"1080",
-	    WS_CHILD | WS_VISIBLE | ES_NUMBER | ES_CENTER, 532, 66, 52, 22,
-	    g_window, reinterpret_cast<HMENU>(kResY), instance, nullptr);
+	    WS_CHILD | ES_NUMBER | ES_CENTER, cx + 360, cy + 28, 52, 22, g_window,
+	    reinterpret_cast<HMENU>(kResY), instance, nullptr);
 
 	g_scaleLabel = CreateWindowExW(
-	    0, L"STATIC", L"\u7a97\u53e3\u5927\u5c0f %:",
-	    WS_CHILD | WS_VISIBLE | SS_LEFT, 12, 96, 72, 20, g_window,
+	    0, L"STATIC", LauncherI18n::T(LauncherI18n::Str::WindowScalePct),
+	    WS_CHILD | SS_LEFT, cx, cy + 60, 90, 20, g_window,
 	    reinterpret_cast<HMENU>(kScaleLabel), instance, nullptr);
 
 	g_scale = CreateWindowExW(
 	    0, TRACKBAR_CLASSW, L"",
-	    WS_CHILD | WS_VISIBLE | TBS_AUTOTICKS, 104, 92, 360, 28, g_window,
+	    WS_CHILD | TBS_AUTOTICKS, cx + 94, cy + 56, cw - 160, 28, g_window,
 	    reinterpret_cast<HMENU>(kScale), instance, nullptr);
 	SendMessageW(g_scale, TBM_SETRANGE, TRUE, MAKELPARAM(25, 100));
 	SendMessageW(g_scale, TBM_SETTICFREQ, 5, 0);
 
 	g_scaleValue = CreateWindowExW(
 	    0, L"STATIC", L"50%",
-	    WS_CHILD | WS_VISIBLE | SS_LEFT, 472, 96, 48, 20, g_window,
+	    WS_CHILD | SS_LEFT, cx + cw - 48, cy + 60, 48, 20, g_window,
 	    reinterpret_cast<HMENU>(kScaleValue), instance, nullptr);
 
-	g_skipStartup = CreateWindowExW(
-	    0, L"BUTTON",
-	    L"\u8df3\u8fc7\u7247\u5934 (StartupMovie)",
-	    WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 12, 122, 220, 22, g_window,
-	    reinterpret_cast<HMENU>(kSkipStartup), instance, nullptr);
+	g_configSyncStatus = CreateWindowExW(
+	    0, L"STATIC", L"",
+	    WS_CHILD | SS_LEFT, cx, cy + 92, cw - 120, 20, g_window,
+	    reinterpret_cast<HMENU>(kConfigSyncStatus), instance, nullptr);
 
-	g_skipConfigIntegrity = CreateWindowExW(
-	    0, L"BUTTON",
-	    L"\u8df3\u8fc7 Default*.ini \u5b8c\u6574\u6027\u68c0\u6d4b",
-	    WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 12, 146, 320, 22, g_window,
-	    reinterpret_cast<HMENU>(kSkipConfigIntegrity), instance, nullptr);
+	g_applyConfig = CreateWindowExW(
+	    0, L"BUTTON", LauncherI18n::T(LauncherI18n::Str::ApplyConfig),
+	    WS_CHILD | BS_PUSHBUTTON, cx + cw - 110, cy + 88, 110, 26, g_window,
+	    reinterpret_cast<HMENU>(kApplyConfig), instance, nullptr);
 
 	g_updateStatus = CreateWindowExW(
-	    0, L"STATIC", L"\u66f4\u65b0\uff1a\u672a\u68c0\u67e5",
-	    WS_CHILD | WS_VISIBLE | SS_LEFT, 12, 172, 360, 22, g_window,
+	    0, L"STATIC", LauncherI18n::T(LauncherI18n::Str::UpdateUnchecked),
+	    WS_CHILD | SS_LEFT, cx, cy, cw, 22, g_window,
 	    reinterpret_cast<HMENU>(kUpdateStatus), instance, nullptr);
 
 	g_checkUpdate = CreateWindowExW(
-	    0, L"BUTTON", L"\u68c0\u67e5\u66f4\u65b0",
-	    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 380, 170, 100, 24, g_window,
+	    0, L"BUTTON", LauncherI18n::T(LauncherI18n::Str::CheckUpdate),
+	    WS_CHILD | BS_PUSHBUTTON, cx, cy + 30, 140, 28, g_window,
 	    reinterpret_cast<HMENU>(kCheckUpdate), instance, nullptr);
 
 	g_upgradeNow = CreateWindowExW(
-	    0, L"BUTTON", L"\u7acb\u5373\u5347\u7ea7",
-	    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 488, 170, 100, 24, g_window,
+	    0, L"BUTTON", LauncherI18n::T(LauncherI18n::Str::UpgradeNow),
+	    WS_CHILD | BS_PUSHBUTTON, cx + 150, cy + 30, 140, 28, g_window,
 	    reinterpret_cast<HMENU>(kUpgradeNow), instance, nullptr);
 	EnableWindow(g_upgradeNow, FALSE);
 
+	const int logY = tabY + tabH + 10;
 	g_log = CreateWindowExW(
 	    WS_EX_CLIENTEDGE, L"EDIT", L"",
 	    WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_LEFT | ES_MULTILINE |
 	        ES_READONLY | ES_AUTOVSCROLL,
-	    12, 202, 600, 250, g_window, reinterpret_cast<HMENU>(kLog), instance,
+	    12, logY, 600, 230, g_window, reinterpret_cast<HMENU>(kLog), instance,
 	    nullptr);
 
+	const int btnY = logY + 242;
 	g_launch = CreateWindowExW(
-	    0, L"BUTTON", L"\u542f\u52a8\u6e38\u620f",
-	    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 12, 464, 100, 30, g_window,
+	    0, L"BUTTON", LauncherI18n::T(LauncherI18n::Str::LaunchGame),
+	    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 12, btnY, 100, 30, g_window,
 	    reinterpret_cast<HMENU>(kLaunchGame), instance, nullptr);
 
 	g_closeGame = CreateWindowExW(
-	    0, L"BUTTON", L"\u5173\u95ed\u6e38\u620f",
-	    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 118, 464, 100, 30, g_window,
+	    0, L"BUTTON", LauncherI18n::T(LauncherI18n::Str::CloseGame),
+	    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 118, btnY, 100, 30, g_window,
 	    reinterpret_cast<HMENU>(kCloseGame), instance, nullptr);
 
 	g_close = CreateWindowExW(
-	    0, L"BUTTON", L"\u5173\u95ed",
-	    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 512, 464, 100, 30,
-	    g_window, reinterpret_cast<HMENU>(kClose), instance, nullptr);
+	    0, L"BUTTON", LauncherI18n::T(LauncherI18n::Str::Close),
+	    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 512, btnY, 100, 30, g_window,
+	    reinterpret_cast<HMENU>(kClose), instance, nullptr);
 
 	SendMessageW(g_status, WM_SETFONT, reinterpret_cast<WPARAM>(g_statusFont),
 	             TRUE);
+	SendMessageW(g_tabs, WM_SETFONT, reinterpret_cast<WPARAM>(g_font), TRUE);
+	SendMessageW(g_languageLabel, WM_SETFONT, reinterpret_cast<WPARAM>(g_font), TRUE);
+	SendMessageW(g_language, WM_SETFONT, reinterpret_cast<WPARAM>(g_font), TRUE);
 	SendMessageW(g_gamePathLabel, WM_SETFONT, reinterpret_cast<WPARAM>(g_font),
 	             TRUE);
 	SendMessageW(g_gamePath, WM_SETFONT, reinterpret_cast<WPARAM>(g_font), TRUE);
@@ -1060,6 +1425,12 @@ void Create() {
 	SendMessageW(g_skipStartup, WM_SETFONT, reinterpret_cast<WPARAM>(g_font), TRUE);
 	SendMessageW(g_skipConfigIntegrity, WM_SETFONT,
 	             reinterpret_cast<WPARAM>(g_font), TRUE);
+	SendMessageW(g_deployStatus, WM_SETFONT, reinterpret_cast<WPARAM>(g_font),
+	             TRUE);
+	SendMessageW(g_configSyncStatus, WM_SETFONT, reinterpret_cast<WPARAM>(g_font),
+	             TRUE);
+	SendMessageW(g_applyConfig, WM_SETFONT, reinterpret_cast<WPARAM>(g_font),
+	             TRUE);
 	SendMessageW(g_updateStatus, WM_SETFONT, reinterpret_cast<WPARAM>(g_font),
 	             TRUE);
 	SendMessageW(g_checkUpdate, WM_SETFONT, reinterpret_cast<WPARAM>(g_font),
@@ -1071,22 +1442,20 @@ void Create() {
 	SendMessageW(g_launch, WM_SETFONT, reinterpret_cast<WPARAM>(g_font), TRUE);
 	SendMessageW(g_closeGame, WM_SETFONT, reinterpret_cast<WPARAM>(g_font), TRUE);
 
-	SendMessageW(g_displayMode, CB_ADDSTRING, 0,
-	             reinterpret_cast<LPARAM>(L"\u7a97\u53e3\u5316 (Windowed)"));
-	SendMessageW(g_displayMode, CB_ADDSTRING, 0,
-	             reinterpret_cast<LPARAM>(L"\u5168\u5c4f (Fullscreen)"));
-	SendMessageW(g_displayMode, CB_ADDSTRING, 0,
-	             reinterpret_cast<LPARAM>(L"\u65e0\u8fb9\u6846 (Borderless)"));
-
-	for (const auto &preset : kWindowedResolutionPresets) {
-		SendMessageW(g_resolutionPreset, CB_ADDSTRING, 0,
-		             reinterpret_cast<LPARAM>(preset.label));
-	}
+	PopulateLanguageCombo();
+	PopulateDisplayModeCombo();
+	PopulateResolutionPresetCombo();
+	TabCtrl_SetCurSel(g_tabs, 0);
+	ShowTabPage(0);
+	SendTabControlToBack();
 
 	ShowWindow(g_window, SW_SHOW);
 	UpdateWindow(g_window);
+	ApplyLocalizedUi();
 	UpdateGamePathField();
 	LoadDisplaySettingsToUi();
+	RefreshConfigSyncStatus();
+	SetTimer(g_window, kConfigSyncTimerId, 2000, nullptr);
 	FlushPendingLogs();
 	BeginUpdateCheck(false);
 }
@@ -1121,9 +1490,16 @@ void Destroy() {
 	g_scaleValue = nullptr;
 	g_skipStartup = nullptr;
 	g_skipConfigIntegrity = nullptr;
+	g_deployStatus = nullptr;
+	g_configSyncStatus = nullptr;
+	g_applyConfig = nullptr;
 	g_updateStatus = nullptr;
 	g_checkUpdate = nullptr;
 	g_upgradeNow = nullptr;
+	g_languageLabel = nullptr;
+	g_language = nullptr;
+	g_tabs = nullptr;
+	g_currentTab = 0;
 	g_launchHandler = nullptr;
 	g_closeGameHandler = nullptr;
 	g_finished = false;

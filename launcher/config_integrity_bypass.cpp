@@ -295,11 +295,8 @@ bool NeedsConfigIntegrityBypass() {
 	}
 
 	bool skipConfigIntegrityCheck = true;
-	std::wstring gameRoot;
 	DeploySettings::MigrateLegacySettingsIfNeeded();
-	DeploySettings::LoadGameRoot(gameRoot);
-	DeploySettings::LoadSkipConfigIntegrityCheck(skipConfigIntegrityCheck,
-	                                             gameRoot);
+	DeploySettings::LoadSkipConfigIntegrityCheck(skipConfigIntegrityCheck, {});
 	if (!skipConfigIntegrityCheck) {
 		return false;
 	}

@@ -2,7 +2,7 @@
 
 Standalone Windows launcher for Mirror's Edge (32-bit) modding. Deploys a **d3d9** graphics proxy that loads **module_manager**; **core** (+ **engine**) and feature mods load in-game from the Module Manager UI.
 
-**Current release:** see [`version.json`](version.json) and [`CHANGELOG.md`](CHANGELOG.md). GitHub Releases: auto-update from the launcher (**检查更新** / **立即升级**); pack with [`tools/pack-release.ps1`](tools/pack-release.ps1). See [`docs/build-deploy.md`](docs/build-deploy.md) § Release / auto-update.
+**Current release:** see [`version.json`](version.json) and [`CHANGELOG.md`](CHANGELOG.md). GitHub Releases: auto-update from the launcher; UI **中文/English** (top-right combo, launcher.uiLanguage); pack with [`tools/pack-release.ps1`](tools/pack-release.ps1). See [`docs/build-deploy.md`](docs/build-deploy.md) § Release / auto-update.
 
 ## Features
 

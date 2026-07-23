@@ -77,64 +77,45 @@ bool SaveGameRoot(const std::wstring &gameRoot) {
 DisplaySettings LoadDisplaySettings() {
 	DeploySettings::MigrateLegacySettingsIfNeeded();
 
-	std::wstring gameRoot;
-	DeploySettings::LoadGameRoot(gameRoot);
-
 	DeployDisplaySettings deploy;
-	DeploySettings::LoadDisplaySettings(deploy, gameRoot);
+	DeploySettings::LoadDisplaySettings(deploy, {});
 	return FromDeploySettings(deploy);
 }
 
 bool SaveDisplaySettings(const DisplaySettings &settings) {
-	std::wstring gameRoot;
-	DeploySettings::LoadGameRoot(gameRoot);
-	return DeploySettings::SaveDisplaySettings(ToDeploySettings(settings),
-	                                         gameRoot);
+	return DeploySettings::SaveDisplaySettings(ToDeploySettings(settings), {});
 }
 
 bool LoadSkipConfigIntegrityCheck() {
 	DeploySettings::MigrateLegacySettingsIfNeeded();
 
-	std::wstring gameRoot;
-	DeploySettings::LoadGameRoot(gameRoot);
-
 	bool skip = true;
-	DeploySettings::LoadSkipConfigIntegrityCheck(skip, gameRoot);
+	DeploySettings::LoadSkipConfigIntegrityCheck(skip, {});
 	return skip;
 }
 
 bool SaveSkipConfigIntegrityCheck(const bool skip) {
-	std::wstring gameRoot;
-	DeploySettings::LoadGameRoot(gameRoot);
-	return DeploySettings::SaveSkipConfigIntegrityCheck(skip, gameRoot);
+	return DeploySettings::SaveSkipConfigIntegrityCheck(skip, {});
 }
 
 bool LoadSkipUpdateCheck() {
 	DeploySettings::MigrateLegacySettingsIfNeeded();
-	std::wstring gameRoot;
-	DeploySettings::LoadGameRoot(gameRoot);
 	bool skip = false;
-	DeploySettings::LoadSkipUpdateCheck(skip, gameRoot);
+	DeploySettings::LoadSkipUpdateCheck(skip, {});
 	return skip;
 }
 
 bool SaveSkipUpdateCheck(const bool skip) {
-	std::wstring gameRoot;
-	DeploySettings::LoadGameRoot(gameRoot);
-	return DeploySettings::SaveSkipUpdateCheck(skip, gameRoot);
+	return DeploySettings::SaveSkipUpdateCheck(skip, {});
 }
 
 bool LoadDismissedUpdateVersion(std::string &out) {
 	DeploySettings::MigrateLegacySettingsIfNeeded();
-	std::wstring gameRoot;
-	DeploySettings::LoadGameRoot(gameRoot);
-	return DeploySettings::LoadDismissedUpdateVersion(out, gameRoot);
+	return DeploySettings::LoadDismissedUpdateVersion(out, {});
 }
 
 bool SaveDismissedUpdateVersion(const std::string &version) {
-	std::wstring gameRoot;
-	DeploySettings::LoadGameRoot(gameRoot);
-	return DeploySettings::SaveDismissedUpdateVersion(version, gameRoot);
+	return DeploySettings::SaveDismissedUpdateVersion(version, {});
 }
 
 } // namespace LauncherSettings

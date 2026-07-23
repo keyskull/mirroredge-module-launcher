@@ -6,6 +6,29 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Version numbers follow [Semantic Versioning](https://semver.org/).  
 Authoritative version: [`version.json`](version.json) (synced to `shared/product_version.h` at build).
 
+## [1.2.10] - 2026-07-23
+
+### Added
+
+- **Launcher config sync status** — Display tab compares UI settings to `TdEngine.ini` / `module_manager.settings.ini` and offers **Apply config**; Launch tab shows whether `Binaries\d3d9.dll` and `modules\module_manager\module_manager.dll` are present (refreshes on edit, tab change, and a 2s timer).
+
+### Fixed
+
+- **`settings.json` location** — launcher always reads/writes `settings.json` next to `ModuleLauncher.exe` (no longer redirects saves to a separate game-root copy when browsing for a path).
+- **Skip intro movies** — clearing only `-StartupMovies` left stock `StartupMovies=StartupMovie` active; now clears the positive key and renames `TdGame\Movies\StartupMovie.bik` to `.mmskip` (restores on uncheck).
+
+## [1.2.9] - 2026-07-23
+
+### Added
+
+- **Launcher feature tabs** — Win32 tab control groups settings into Launch / Display / Update pages; status, language, log, and launch/close buttons stay always visible.
+
+## [1.2.8] - 2026-07-23
+
+### Added
+
+- **Launcher Chinese / English UI** — top-right language combo switches all launcher chrome and log strings instantly; persists as `launcher.uiLanguage` (`zh` / `en`) in `settings.json`. Default follows Windows UI language when unset.
+
 ## [1.2.7] - 2026-07-23
 
 ### Added

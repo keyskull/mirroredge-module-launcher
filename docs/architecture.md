@@ -189,7 +189,7 @@ See [d3d9proxy.md](d3d9proxy.md) for full proxy flow, enable/disable, and confli
 
 Resolution order (`launcher/game_path.cpp` + `launcher/paths.cpp`):
 
-1. **Saved override** — `<gameRoot>\settings.json` → `launcher.gameRoot` (set via launcher **浏览...**; migrates legacy `%TEMP%\mirroredge-launcher.settings`)
+1. **Saved override** — `settings.json` next to `ModuleLauncher.exe` → `launcher.gameRoot` (set via launcher **浏览...**; migrates legacy `%TEMP%\mirroredge-launcher.settings`)
 2. **Environment** — `ME_GAME_PATH` or `ME_DEPLOY_PATH` (game root)
 3. **Auto-detect** — Steam `libraryfolders.vdf` / app manifest `17410`, EA/Origin common folders, Documents sibling `EA Games\...`
 4. **Launcher-relative** — walk up to 6 parent directories from launcher exe for `Binaries\MirrorsEdge.exe`
@@ -198,7 +198,7 @@ Supports launcher in **game root** or any ancestor of the game binaries. UI show
 
 Module DLL deploy targets:
 
-- `<gameRoot>\settings.json` — launcher UI prefs + `mods.autoLoad` (see schema below)
+- `settings.json` next to `ModuleLauncher.exe` (when deployed into the game root, that is `<gameRoot>\settings.json`) — launcher UI prefs + `mods.autoLoad` (see schema below)
 - `<gameRoot>\modules\module_manager\module_manager.dll`
 - `<gameRoot>\modules\core\core.dll`
 - `<gameRoot>\modules\engine\engine.dll`
@@ -211,7 +211,7 @@ Search order for manager DLL uses `managerSearchSubdirs` in `launcher/config.h`.
 
 ### `settings.json` (launcher + mod auto-load)
 
-Lives at `<gameRoot>\settings.json` (or next to `ModuleLauncher.exe` before a game root is saved). Mirrors every launcher UI option:
+Lives next to `ModuleLauncher.exe` (install/`dist` root; same as `<gameRoot>\settings.json` when the launcher is deployed into the game folder). Mirrors every launcher UI option:
 
 | Field | Type | Launcher UI | Notes |
 |-------|------|-------------|-------|
@@ -221,7 +221,7 @@ Lives at `<gameRoot>\settings.json` (or next to `ModuleLauncher.exe` before a ga
 | `launcher.display.resX` / `resY` | int | 渲染分辨率 | Used when `renderMatchWindow` is false |
 | `launcher.display.scale` | float | 窗口大小 % | Borderless window scale (0.25–1.0) |
 | `launcher.display.renderMatchWindow` | bool | 分辨率预设「匹配窗口」 | Borderless only |
-| `launcher.display.skipStartupMovies` | bool | 跳过片头 | Adds `-nomoviestartup` on launch |
+| `launcher.display.skipStartupMovies` | bool | 跳过片头 | Clears `StartupMovies` in `TdEngine.ini`, keeps UE3 removers, renames `TdGame\Movies\StartupMovie.bik` → `.mmskip`; launch also passes `-nomoviestartup -nomovies` |
 | `mods.autoLoad` | string[] | — | Third-party mod IDs loaded after core bootstrap |
 
 Environment overrides still apply: `MMOD_DISABLE_CONFIG_BYPASS=1` forces integrity bypass off; `MMOD_FORCE_CONFIG_BYPASS=1` forces it on.

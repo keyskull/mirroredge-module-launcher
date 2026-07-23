@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "launcher_i18n.h"
 
 #include "config.h"
 #include "game_path.h"
@@ -538,7 +539,7 @@ bool BrowseForGameRoot(HWND owner, std::wstring &gameRoot) {
 	if (!NormalizeToGameRoot(selected, normalizedRoot)) {
 		MessageBoxW(
 		    owner,
-		    L"Selected folder does not contain Binaries\\MirrorsEdge.exe.",
+		    LauncherI18n::T(LauncherI18n::Str::BrowseInvalidFolder),
 		    L"Mirror's Edge Module Launcher", MB_ICONWARNING | MB_OK);
 		if (comInitialized) {
 			CoUninitialize();
@@ -548,7 +549,7 @@ bool BrowseForGameRoot(HWND owner, std::wstring &gameRoot) {
 
 	if (!SaveGameRoot(normalizedRoot)) {
 		MessageBoxW(owner,
-		            L"Could not save the selected game path.",
+		            LauncherI18n::T(LauncherI18n::Str::BrowseSaveFailed),
 		            L"Mirror's Edge Module Launcher", MB_ICONERROR | MB_OK);
 		if (comInitialized) {
 			CoUninitialize();

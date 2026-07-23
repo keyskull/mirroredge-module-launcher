@@ -19,7 +19,7 @@ Symptom → cause → fix reference for launcher, injection, and in-game modules
 **Fix:**
 
 1. In the launcher UI, click **浏览...** and select the game root (folder containing `Binaries\`) or the `Binaries` folder directly.
-2. Saved path: `<gameRoot>\settings.json` (`launcher.gameRoot`; legacy `%TEMP%\mirroredge-launcher.settings` migrates on first launch).
+2. Saved path: `settings.json` next to `ModuleLauncher.exe` → `launcher.gameRoot` (legacy `%TEMP%\mirroredge-launcher.settings` migrates on first launch).
 3. Or set runtime env `ME_GAME_PATH` / `ME_DEPLOY_PATH` to the game root.
 4. For `build.ps1` deploy: set `deployPath` in `deploy.config.json`, or `ME_DEPLOY_PATH`.
 5. Path logic: `launcher/game_path.cpp` (auto-detect) then `launcher/paths.cpp` (fallback walk from launcher exe).
