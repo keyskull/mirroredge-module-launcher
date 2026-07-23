@@ -1,0 +1,34 @@
+name: test-logs
+
+on:
+  push:
+    paths:
+      - "test-logs/**"
+      - "test-environments.json"
+      - "tools/debug-harness/**"
+      - ".github/workflows/test-logs.yml"
+  pull_request:
+    paths:
+      - "test-logs/**"
+      - "test-environments.json"
+      - "tools/debug-harness/**"
+      - ".github/workflows/test-logs.yml"
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate test-logs
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+          ./tools/debug-harness/validate-test-logs.ps1
+
+      - name: verify-harness (merge regression)
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+          ./tools/debug-harness/scenarios/verify-harness.ps1

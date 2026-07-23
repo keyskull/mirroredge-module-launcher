@@ -1,0 +1,11 @@
+{
+  "minNonBlackRatio": 0.015,
+  "minWidth": 320,
+  "minHeight": 240,
+  "minMeanLumDelta": 1.2,
+  "minVarianceDelta": 25.0,
+  "minNonBlackDelta": 0.004,
+  "captureSettleMs": 400,
+  "minWidthPartial": 200,
+  "minHeightPartial": 180
+}

@@ -1,0 +1,9 @@
+LIBRARY multiplayer
+EXPORTS
+    MMOD_PluginInitialize
+    MMOD_PluginShutdown
+    MMOD_GetPluginInfo
+    MmMultiplayer_GetHarnessStatus
+    MmMultiplayer_GetSpawnedPlayers
+    MmMultiplayer_GetPosedPlayers
+    MmMultiplayer_EnsureRuntimeHooks

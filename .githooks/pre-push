@@ -1,0 +1,9 @@
+#!/bin/sh
+# Validates test-logs/ when commits being pushed touch that tree.
+repo_root="$(git rev-parse --show-toplevel)"
+hook_ps1="$repo_root/tools/debug-harness/hooks/pre-push-test-logs.ps1"
+if [ ! -f "$hook_ps1" ]; then
+  exit 0
+fi
+cat | powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$hook_ps1" -RepoRoot "$repo_root"
+exit $?

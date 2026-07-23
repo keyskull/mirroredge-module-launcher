@@ -1,0 +1,13 @@
+LIBRARY mm-console
+EXPORTS
+    MMOD_ConsoleAttach
+    MMOD_ConsoleInitialize
+    MMOD_ConsoleShow
+    MMOD_ConsoleHide
+    MMOD_ConsoleIsOpen
+    MMOD_ConsoleToggle
+    MMOD_ConsolePollToggle
+    MMOD_ConsoleRender
+    MMOD_ConsoleRenderRecent
+    MMOD_ConsoleExecuteCommand
+    MMOD_GetRuntimeVersion

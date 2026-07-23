@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\addons">
+      <UniqueIdentifier>{78e177e8-1b0e-4bbd-b22d-192ed0d7b535}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\util">
+      <UniqueIdentifier>{c8d5d95f-60ef-435c-843d-f99fcb0d7418}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\addons">
+      <UniqueIdentifier>{b5dd9396-45e2-4559-a7b7-e19e6779427a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\shared">
+      <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\shared\me_sdk">
+      <UniqueIdentifier>{90014758-83f6-4fe5-90ee-3a7786637332}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="mod_ipc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="modmanager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="engine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="addon.h">
+      <Filter>Header Files\addons</Filter>
+    </ClInclude>
+    <ClInclude Include="menu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="settings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="debug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="addons\client.h">
+      <Filter>Header Files\addons</Filter>
+    </ClInclude>
+    <ClInclude Include="addons\dolly.h">
+      <Filter>Header Files\addons</Filter>
+    </ClInclude>
+    <ClInclude Include="addons\trainer.h">
+      <Filter>Header Files\addons</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="engine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="exports.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mod_log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="modhost.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="menu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="settings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="addon_safe.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mod_ipc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="modmanager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="addons\client.cpp">
+      <Filter>Source Files\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="addons\dolly.cpp">
+      <Filter>Source Files\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="addons\trainer.cpp">
+      <Filter>Source Files\addons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\hook.cpp">
+      <Filter>Source Files\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\runtime\init.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\runtime\pattern.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\util\ME_Basic.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Core_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_ALAudio_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Editor_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Engine_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Fp_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_GameFramework_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_IpDrv_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_OnlineSubsystemPC_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_TdEditor_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_TdGame_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_TdSharedContent_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_TdTTContent_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_TdTuContent_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Tp_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Ts_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_UnrealEd_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_WinDrv_functions.cpp">
+      <Filter>Source Files\shared\me_sdk</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

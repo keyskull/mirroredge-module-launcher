@@ -1,0 +1,68 @@
+name: sdk-verify
+
+on:
+  push:
+    paths:
+      - "shared/me_sdk/**"
+      - "tools/sdk-verify/**"
+      - ".github/workflows/sdk-verify.yml"
+  pull_request:
+    paths:
+      - "shared/me_sdk/**"
+      - "tools/sdk-verify/**"
+      - ".github/workflows/sdk-verify.yml"
+
+jobs:
+  verify-generated-headers:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check sdk_verify_generated.h is up to date
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+          $temp = Join-Path $env:RUNNER_TEMP "sdk_verify_check.h"
+          ./tools/sdk-verify/generate-static-asserts.ps1 -OutputPath $temp
+          $committed = Get-Content "shared/me_sdk/sdk_verify_generated.h" -Raw
+          $generated = Get-Content $temp -Raw
+          $committedBody = (($committed -split "`n") | Select-Object -Skip 2) -join "`n"
+          $generatedBody = (($generated -split "`n") | Select-Object -Skip 2) -join "`n"
+          if ($committedBody -ne $generatedBody) {
+            Write-Host "ERROR: sdk_verify_generated.h is out of date!" -ForegroundColor Red
+            Write-Host "Run: .\tools\sdk-verify\generate-static-asserts.ps1" -ForegroundColor Yellow
+            exit 1
+          }
+          Write-Host "sdk_verify_generated.h is up to date." -ForegroundColor Green
+
+      - name: Validate SDK patterns syntax
+        shell: pwsh
+        run: |
+          $patternsFile = "shared/me_sdk/runtime/patterns_globals.h"
+          if (-not (Test-Path $patternsFile)) {
+            Write-Host "ERROR: patterns_globals.h not found" -ForegroundColor Red
+            exit 1
+          }
+          $content = Get-Content $patternsFile -Raw
+          if ($content -notmatch 'GNames\[\]') {
+            Write-Host "ERROR: GNames pattern missing" -ForegroundColor Red
+            exit 1
+          }
+          if ($content -notmatch 'GObjects\[\]') {
+            Write-Host "ERROR: GObjects pattern missing" -ForegroundColor Red
+            exit 1
+          }
+          Write-Host "Patterns syntax valid." -ForegroundColor Green
+
+      - name: Check game_signature.h has known FNV
+        shell: pwsh
+        run: |
+          $sigFile = "shared/me_sdk/runtime/game_signature.h"
+          $content = Get-Content $sigFile -Raw
+          if ($content -match 'kKnownCodeProbeFnvCount = 0') {
+            Write-Host "NOTE: kKnownCodeProbeFnvCount is 0 -- code probe gate is disabled." -ForegroundColor Yellow
+            Write-Host "Run: .\tools\sdk-verify\compute-code-probe.ps1 to enable it." -ForegroundColor Yellow
+          } else {
+            Write-Host "Code probe FNV gate is active." -ForegroundColor Green
+          }

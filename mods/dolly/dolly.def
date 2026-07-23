@@ -1,0 +1,5 @@
+LIBRARY dolly
+EXPORTS
+    MMOD_PluginInitialize
+    MMOD_PluginShutdown
+    MMOD_GetPluginInfo

@@ -1,0 +1,20 @@
+{
+  "launcher": {
+    "gameRoot": "",
+    "skipConfigIntegrityCheck": true,
+    "display": {
+      "mode": "borderless",
+      "resX": 1920,
+      "resY": 1080,
+      "scale": 0.5,
+      "renderMatchWindow": true,
+      "skipStartupMovies": true
+    }
+  },
+  "mods": {
+    "autoLoad": ["core"]
+  },
+  "diagnostics": {
+    "enabled": false
+  }
+}

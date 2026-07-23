@@ -1,0 +1,72 @@
+{
+    "format_version":  1,
+    "generated_by":  "verify-sdk.ps1",
+    "mode":  "pure-instruction-scan",
+    "binary":  {
+                   "file_name":  "MirrorsEdge.exe",
+                   "file_size":  60167392,
+                   "sha256":  "84eea8fd3c4494d8ce3db8fc55b846f731425d6a2cd63da1189d641daf2929e4",
+                   "image_base":  4194304,
+                   "image_base_hex":  "0x400000",
+                   "image_size":  60167392,
+                   "image_size_hex":  "0x39614E0",
+                   "section_count":  10,
+                   "scan_scope":  "executable-sections",
+                   "scan_sections":  [
+                                         ".text",
+                                         "Stext",
+                                         "Sitext",
+                                         "Srdata",
+                                         "Sdata",
+                                         ".securom"
+                                     ]
+               },
+    "code_probe":  {
+                       "file_offset":  4096,
+                       "length":  4096,
+                       "fnv1a32":  3494401480,
+                       "fnv1a32_hex":  "0xD04855C8"
+                   },
+    "patterns":  {
+                     "gnames":  {
+                                    "signature":  "8B 0D ?? ?? ?? ?? 8B 84 24 ?? ?? ?? ?? 8B 04 81",
+                                    "mask":  "xx????xxx????xxx",
+                                    "found":  true,
+                                    "match_count":  1,
+                                    "file_offset":  4658763,
+                                    "file_offset_hex":  "0x47164B",
+                                    "rva":  4658763,
+                                    "rva_hex":  "0x47164B",
+                                    "va":  8853067,
+                                    "va_hex":  "0x87164B",
+                                    "section":  ".text",
+                                    "target_va":  33978520,
+                                    "target_va_hex":  "0x2067898",
+                                    "target_rva":  29784216,
+                                    "target_rva_hex":  "0x1C67898",
+                                    "target_file_offset":  29784216,
+                                    "target_file_offset_hex":  "0x1C67898",
+                                    "target_section":  ".data"
+                                },
+                     "gobjects":  {
+                                      "signature":  "8B 15 ?? ?? ?? ?? 8B 0C B2 8D 44 24 30",
+                                      "mask":  "xx????xxxxxxx",
+                                      "found":  true,
+                                      "match_count":  1,
+                                      "file_offset":  444802,
+                                      "file_offset_hex":  "0x6C982",
+                                      "rva":  444802,
+                                      "rva_hex":  "0x6C982",
+                                      "va":  4639106,
+                                      "va_hex":  "0x46C982",
+                                      "section":  ".text",
+                                      "target_va":  33960964,
+                                      "target_va_hex":  "0x2063404",
+                                      "target_rva":  29766660,
+                                      "target_rva_hex":  "0x1C63404",
+                                      "target_file_offset":  29766660,
+                                      "target_file_offset_hex":  "0x1C63404",
+                                      "target_section":  ".data"
+                                  }
+                 }
+}

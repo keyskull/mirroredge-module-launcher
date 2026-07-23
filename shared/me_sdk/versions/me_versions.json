@@ -1,0 +1,69 @@
+{
+  "_description": "Known offsets and addresses for Mirror's Edge builds.  Mirrors MirrorsEdgeTweaks' Offsets/Offsets_*.json pattern.  Used when pattern scanning fails (fallback).",
+  "_schema_version": 1,
+
+  "builds": {
+    "ME_1_0_Retail": {
+      "label": "ME 1.0 Retail",
+      "fingerprint": {
+        "exe_size_min": 12582912,
+        "exe_size_max": 14680064,
+        "timestamp_min": 1224057600,
+        "timestamp_max": 1227667200,
+        "file_version": "1.0.0.0"
+      },
+      "exe_patches": {
+        "render_target_fix": {
+          "description": "JNE -> JMP to fix render target sizing (MET ExePatcher).",
+          "pattern": "0F 85 ?? ?? ?? ?? 8B ?? ?? ?? ?? ?? 8B",
+          "mask": "xxxx????xxxxxxx",
+          "replace": "E9 ?? ?? ?? ?? 90 8B ?? ?? ?? ?? ?? 8B",
+          "replace_mask": "x????xxxxxxx"
+        }
+      },
+      "patterns": {
+        "GNames": { "note": "Most builds: call pattern near GObjects" },
+        "GObjects": { "note": "See me_sdk/runtime/init.cpp patterns" },
+        "ProcessEvent": { "note": "vtable index 61" }
+      }
+    },
+
+    "ME_1_0_Steam": {
+      "label": "ME 1.0 Steam",
+      "fingerprint": {
+        "exe_size_min": 14680065,
+        "exe_size_max": 18874368,
+        "file_version": "1.0.0.0"
+      },
+      "exe_patches": {},
+      "patterns": {}
+    },
+
+    "ME_1_0_EA_App": {
+      "label": "ME 1.0 EA App / Origin",
+      "fingerprint": {
+        "exe_size_min": 18874369,
+        "exe_size_max": 4294967295,
+        "file_version": "1.0.0.0"
+      },
+      "exe_patches": {},
+      "patterns": {}
+    },
+
+    "ME_1_0_GOG": {
+      "label": "ME 1.0 GOG",
+      "fingerprint": {
+        "timestamp_min": 1325376000,
+        "file_version": "1.0.0.0"
+      },
+      "exe_patches": {},
+      "patterns": {}
+    }
+  },
+
+  "_how_to_extend": {
+    "add_known_offset": "Add an entry under the target build with offset + description (line number is ordinal reference).",
+    "add_pattern_fallback": "When pattern scanning fails on a known-good build, record the correct address here so future detection can fall back.",
+    "verify_before_commit": "Confirm against ReClass / Cheat Engine on the actual ME binary."
+  }
+}

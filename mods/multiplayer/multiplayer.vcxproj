@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <ProjectGuid>{C1D2E3F4-A5B6-7890-CDEF-123456789ABC}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>multiplayer</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)dist\modules\multiplayer\</OutDir>
+    <IntDir>$(SolutionDir)obj\multiplayer\$(Configuration)\</IntDir>
+    <TargetName>multiplayer</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)dist\modules\multiplayer\</OutDir>
+    <IntDir>$(SolutionDir)obj\multiplayer\$(Configuration)\</IntDir>
+    <TargetName>multiplayer</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;MULTIPLAYER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <ModuleDefinitionFile>multiplayer.def</ModuleDefinitionFile>
+      <AdditionalDependencies>ws2_32.lib;d3d9.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;MULTIPLAYER_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <ModuleDefinitionFile>multiplayer.def</ModuleDefinitionFile>
+      <AdditionalDependencies>ws2_32.lib;d3d9.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="client.h" />
+    <ClInclude Include="client_internal.h" />
+    <ClInclude Include="client_platform.h" />
+    <ClInclude Include="client_plugin.h" />
+    <ClInclude Include="settings.h" />
+    <ClInclude Include="version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="client.cpp" />
+    <ClCompile Include="client_level.cpp" />
+    <ClCompile Include="client_network.cpp" />
+    <ClCompile Include="client_remote.cpp" />
+    <ClCompile Include="client_state.cpp" />
+    <ClCompile Include="client_ui.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="mod_info.cpp" />
+    <ClCompile Include="..\..\shared\feature_mod_log.cpp" />
+    <ClCompile Include="..\..\shared\mod_plugin_settings.cpp" />
+    <ClCompile Include="..\..\shared\feature_plugin_host.cpp" />
+    <ClCompile Include="..\..\shared\mp_engine_shim.cpp" />
+    <ClCompile Include="..\..\shared\memory_fault_log.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\runtime\init.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\runtime\safe_access.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\runtime\safe_gui.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\runtime\safe_gui_invoke.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\runtime\safe_gameplay.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\runtime\safe_state.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\runtime\pattern.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\util\ME_Basic.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Core_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Engine_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_GameFramework_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_TdGame_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_TdSharedContent_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Tp_functions.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

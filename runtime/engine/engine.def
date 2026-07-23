@@ -1,0 +1,20 @@
+LIBRARY engine
+EXPORTS
+    MmOnD3D9DeviceCreated
+    MmOnDirect3D9Created
+    MMOD_EngineSetCoreBridge
+    MMOD_GetMmultiplayerApi
+    MMOD_GetRuntimeVersion
+    MMOD_EngineFormatStatusJson
+    MMOD_EngineDrainSpawnQueue
+    MMOD_EngineSpawnCharacterDirect
+    MMOD_BorderlessInstallHost
+    MMOD_BorderlessAppendStatus
+    MMOD_BorderlessQueryUiState
+    MMOD_BorderlessSetEnabled
+    MMOD_BorderlessSetScale
+    MMOD_BorderlessMarkApply
+    MMOD_BorderlessTrySyncViewportResolution
+    MMOD_BorderlessTryCompensateMouseLook
+    MMOD_BorderlessQueryEngineViewportSize
+    MMOD_BorderlessGetLastMouseLookScale

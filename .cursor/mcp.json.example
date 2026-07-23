@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "mirroredge-debug": {
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "tools/mcp-debug-server/run.ps1"
+      ],
+      "env": {
+        "MMOD_REPO_ROOT": "<absolute path to this repo; setup.ps1 fills automatically>"
+      }
+    }
+  }
+}

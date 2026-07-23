@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "description": "Cursor test machines registry. Update when adding a lab PC; do not put secrets or personal home-directory paths in the committed copy — prefer placeholders and keep real paths in a local override or deploy.config.json.",
+  "coordination": {
+    "notes": "Cross-machine harness: each machine writes obj/harness-coord.json (gitignored) for live status. Persistent shared history: test-logs/ (git). Cross-machine alerts: test-logs/alerts/. New machine: deploy.config.json + setup-test-machine.ps1 (see docs/test-environments.md).",
+    "statusFile": "obj/harness-coord.json",
+    "alertsFile": "test-logs/alerts/alerts.jsonl",
+    "testLogs": "test-logs/index.json"
+  },
+  "machines": [
+    {
+      "id": "1号机",
+      "role": "primary harness",
+      "deployPath": "<game root, parent of Binaries>",
+      "repoPath": "<absolute path to this repo clone>",
+      "gameDrive": "C:",
+      "os": "Windows 10",
+      "notes": "Primary dev + full harness. Set real paths locally; deploy.config.json testMachine=1号机.",
+      "peer": "2号机"
+    },
+    {
+      "id": "2号机",
+      "role": "secondary",
+      "deployPath": "<game root on this machine>",
+      "repoPath": "<absolute path to this repo clone>",
+      "gameDrive": "F:",
+      "os": "Windows 10",
+      "notes": "Secondary lab PC",
+      "peer": "1号机"
+    }
+  ]
+}

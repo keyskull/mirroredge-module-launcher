@@ -1,0 +1,7 @@
+LIBRARY module_manager
+EXPORTS
+    MmOnD3D9DeviceCreated
+    MmHarnessBeginFrame
+    MmHarnessRecordRect
+    MmHarnessFormatJson
+    MMOD_GetRuntimeVersion

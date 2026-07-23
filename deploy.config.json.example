@@ -1,0 +1,5 @@
+{
+  "deployPath": "<absolute path to game root, parent of Binaries>",
+  "deployProxy": false,
+  "testMachine": "<id from test-environments.json, e.g. 1号机>"
+}

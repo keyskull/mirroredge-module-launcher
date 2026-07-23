@@ -1,0 +1,17 @@
+{
+    "schemaVersion":  1,
+    "updatedAt":  "2026-07-03T05:52:49.1288955Z",
+    "unreadBy":  {
+                     "2鍙锋満":  1,
+                     "1鍙锋満":  1
+                 },
+    "recent":  {
+                   "alertId":  "20260703-055249Z-2号机",
+                   "fromMachine":  "2号机",
+                   "toMachine":  "1号机",
+                   "severity":  "blocker",
+                   "title":  "2号机: core Loaded 但 init 卡住 — 请 review 192427a borderless",
+                   "createdAt":  "2026-07-03T05:52:49.1288955Z",
+                   "shortCommit":  "761fb3e"
+               }
+}

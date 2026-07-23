@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <ProjectGuid>{F1A2B3C4-D5E6-7890-ABCD-EF1234567891}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>engine</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)dist\modules\engine\</OutDir>
+    <IntDir>$(SolutionDir)obj\engine\$(Configuration)\</IntDir>
+    <TargetName>engine</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)dist\modules\engine\</OutDir>
+    <IntDir>$(SolutionDir)obj\engine\$(Configuration)\</IntDir>
+    <TargetName>engine</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;MM_ENGINE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <ModuleDefinitionFile>engine.def</ModuleDefinitionFile>
+      <AdditionalDependencies>d3d9.lib;d3dx9.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;MM_ENGINE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <ModuleDefinitionFile>engine.def</ModuleDefinitionFile>
+      <AdditionalDependencies>d3d9.lib;d3dx9.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="engine.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="api_export.cpp" />
+    <ClCompile Include="borderless\detail.cpp" />
+    <ClCompile Include="borderless\export.cpp" />
+    <ClCompile Include="borderless\viewport.cpp" />
+    <ClCompile Include="borderless\window.cpp" />
+    <ClCompile Include="bridge_export.cpp" />
+    <ClCompile Include="debug_trace.cpp" />
+    <ClCompile Include="engine.cpp" />
+    <ClCompile Include="engine_gameplay_activation.cpp" />
+    <ClCompile Include="engine_hooks_gameplay.cpp" />
+    <ClCompile Include="engine_hooks_d3d9.cpp" />
+    <ClCompile Include="engine_hooks_bootstrap.cpp" />
+    <ClCompile Include="engine_presentation_state.cpp" />
+    <ClCompile Include="engine_state.cpp" />
+    <ClCompile Include="exports.cpp" />
+    <ClCompile Include="spawn_drain_export.cpp" />
+    <ClCompile Include="spawn_actor_safe.cpp" />
+    <ClCompile Include="status_export.cpp" />
+    <ClCompile Include="version_export.cpp" />
+    <ClCompile Include="..\..\shared\engine_core_bridge.cpp" />
+    <ClCompile Include="..\..\shared\hook.cpp" />
+    <ClCompile Include="..\..\shared\memory_fault_log.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\runtime\init.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\runtime\safe_access.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\runtime\safe_gui.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\runtime\safe_gui_invoke.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\runtime\safe_state.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\runtime\pattern.cpp" />
+    <ClCompile Include="..\..\shared\ue_patcher\exe_patcher.cpp" />
+    <ClCompile Include="..\..\shared\ue_patcher\ue3_opcodes.cpp" />
+    <ClCompile Include="..\..\shared\ue_patcher\ue3_bytecode.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\versions\me_version.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_ALAudio_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\util\ME_Basic.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Core_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Editor_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Engine_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Fp_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_GameFramework_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_IpDrv_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_OnlineSubsystemPC_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_TdEditor_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_TdGame_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_TdSharedContent_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_TdTTContent_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_TdTuContent_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Tp_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_Ts_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_UnrealEd_functions.cpp" />
+    <ClCompile Include="..\..\shared\me_sdk\generated\ME_WinDrv_functions.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="engine.def" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

@@ -1,0 +1,50 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Build (Win32 Release, no deploy)
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+          .\build.ps1 -NoDeploy
+
+      - name: Pack release zip
+        shell: pwsh
+        id: pack
+        run: |
+          .\tools\pack-release.ps1
+          $zip = Get-ChildItem .\artifacts\mirroredge-module-launcher-*-win32.zip | Select-Object -First 1
+          if (-not $zip) { throw "zip missing" }
+          "zip=$($zip.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "name=$($zip.Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          $ver = (Get-Content .\version.json -Raw | ConvertFrom-Json).version
+          "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.pack.outputs.zip }}
+          name: mirroredge-module-launcher ${{ steps.pack.outputs.version }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true

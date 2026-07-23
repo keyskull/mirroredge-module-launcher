@@ -1,0 +1,14 @@
+{
+  "name": "mirroredge-debug-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP bridge for mirroredge-module-launcher AI debug harness",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  }
+}

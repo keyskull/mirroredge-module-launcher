@@ -1,0 +1,20 @@
+---
+description: Point AI to project technical docs before architectural changes
+alwaysApply: true
+---
+
+# Technical documentation
+
+Before changing launcher injection, mod init, IPC, proxy, or build/deploy:
+
+1. Read `AGENTS.md` and the relevant file under `docs/`.
+2. Before bug fixes: follow `docs/known-issues-workflow.md`; search `docs/known-issues/` and do not retry entries listed under **Failed approaches — do NOT retry**.
+3. Before diagnosing multiplayer **Set Gameplay** / empty `MmodDrainSpawnQueue` / missing bots: read `docs/mp-set-gameplay-runbook.md` (8-gate critical path first) and `%TEMP%\mirroredge-multiplayer-client.log` (do not re-litigate activation if `activation set live` already appears).
+4. Treat `shared/module_contract.h` and `launcher/config.h` as authoritative for cross-process names and defaults.
+5. Default mod is `mmultiplayer.dll`; launcher deploys d3d9 proxy and waits for `module_manager.dll` — plugins load in-game from Module Manager.
+6. Never hook D3D9 from the inject worker after `d3d9.dll` loads — see `docs/mmultiplayer-mod.md`, `docs/troubleshooting.md`, and KI entries under `docs/known-issues/`.
+7. Update `docs/*.md` when you change documented behavior; non-trivial fixes also update `docs/known-issues/` per `known-issues-workflow.md`.
+
+Doc index: `architecture`, `injection-and-ipc`, `mmultiplayer-mod`, `d3d9proxy`, `adding-a-mod`, `build-deploy`, `troubleshooting`, `known-issues-workflow`, `known-issues`, `test-environments`, `mp-set-gameplay-runbook`.
+
+Multi-machine Cursor labs: read `docs/test-environments.md` before assuming deploy paths; use `deploy.config.json` / `test-environments.json`, not hardcoded user directories.

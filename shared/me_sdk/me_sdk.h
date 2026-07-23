@@ -1,0 +1,65 @@
+#pragma once
+
+// Mirror's Edge (1.0) SDK — umbrella header.
+// Layout: runtime/ (init, scan), patterns/ (signatures), util/ (helpers), generated/ (UE3 dump).
+
+#include <locale>
+#include <set>
+#include <string>
+
+#include "util/ME_Basic.hpp"
+
+// Compile-time verification macros (MMOD_SDK_VERIFY_CLASS_SIZE etc.)
+#include "me_sdk/sdk_verify.h"
+
+#include "generated/ME_Core_structs.hpp"
+#include "generated/ME_Core_classes.hpp"
+#include "generated/ME_Core_parameters.hpp"
+#include "generated/ME_Engine_structs.hpp"
+#include "generated/ME_Engine_classes.hpp"
+#include "generated/ME_Engine_parameters.hpp"
+#include "generated/ME_Ts_structs.hpp"
+#include "generated/ME_Ts_classes.hpp"
+#include "generated/ME_Ts_parameters.hpp"
+#include "generated/ME_Tp_structs.hpp"
+#include "generated/ME_Tp_classes.hpp"
+#include "generated/ME_Tp_parameters.hpp"
+#include "generated/ME_Fp_structs.hpp"
+#include "generated/ME_Fp_classes.hpp"
+#include "generated/ME_Fp_parameters.hpp"
+#include "generated/ME_GameFramework_structs.hpp"
+#include "generated/ME_GameFramework_classes.hpp"
+#include "generated/ME_GameFramework_parameters.hpp"
+#include "generated/ME_IpDrv_structs.hpp"
+#include "generated/ME_IpDrv_classes.hpp"
+#include "generated/ME_IpDrv_parameters.hpp"
+#include "generated/ME_Editor_structs.hpp"
+#include "generated/ME_Editor_classes.hpp"
+#include "generated/ME_Editor_parameters.hpp"
+#include "generated/ME_TdGame_structs.hpp"
+#include "generated/ME_TdGame_classes.hpp"
+#include "generated/ME_TdGame_parameters.hpp"
+#include "generated/ME_TdTTContent_structs.hpp"
+#include "generated/ME_TdTTContent_classes.hpp"
+#include "generated/ME_TdTTContent_parameters.hpp"
+#include "generated/ME_WinDrv_structs.hpp"
+#include "generated/ME_WinDrv_classes.hpp"
+#include "generated/ME_WinDrv_parameters.hpp"
+#include "generated/ME_ALAudio_structs.hpp"
+#include "generated/ME_ALAudio_classes.hpp"
+#include "generated/ME_ALAudio_parameters.hpp"
+#include "generated/ME_UnrealEd_structs.hpp"
+#include "generated/ME_UnrealEd_classes.hpp"
+#include "generated/ME_UnrealEd_parameters.hpp"
+#include "generated/ME_TdEditor_structs.hpp"
+#include "generated/ME_TdEditor_classes.hpp"
+#include "generated/ME_TdEditor_parameters.hpp"
+#include "generated/ME_OnlineSubsystemPC_structs.hpp"
+#include "generated/ME_OnlineSubsystemPC_classes.hpp"
+#include "generated/ME_OnlineSubsystemPC_parameters.hpp"
+#include "generated/ME_TdSharedContent_structs.hpp"
+#include "generated/ME_TdSharedContent_classes.hpp"
+#include "generated/ME_TdSharedContent_parameters.hpp"
+#include "generated/ME_TdTuContent_structs.hpp"
+#include "generated/ME_TdTuContent_classes.hpp"
+#include "generated/ME_TdTuContent_parameters.hpp"

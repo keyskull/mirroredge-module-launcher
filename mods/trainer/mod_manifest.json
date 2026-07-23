@@ -1,0 +1,8 @@
+{
+  "id": "trainer",
+  "name": "Trainer",
+  "version": "1.0.0",
+  "requires": [
+    { "id": "core", "minVersion": "1.0.0" }
+  ]
+}

@@ -1,0 +1,61 @@
+# Local deploy target (copy from deploy.config.json.example)
+deploy.config.json
+
+# Local machine path overrides (optional; committed file uses placeholders)
+test-environments.local.json
+
+# Cursor MCP (per-machine paths; regenerate with tools/debug-harness/setup.ps1)
+.cursor/mcp.json
+
+# Build outputs
+[Bb]in/
+[Oo]bj/
+[Dd]ist/
+[Aa]rtifacts/
+[Rr]elease/
+[Dd]ebug/
+x64/
+x86/
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+*.ipch
+*.pdb
+*.ilk
+*.exp
+*.lib
+!third_party/dxsdk/lib/x86/*.lib
+
+# Built server / helper binaries (rebuild locally)
+*.exe
+!third_party/**/*.exe
+
+# Logs and scratch
+*.log
+build-*.txt
+harness-*.txt
+temp-*.ps1
+quick-*.ps1
+myeasylog.log
+
+# Node (MCP debug server)
+node_modules/
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Scratch / local captures
+temp-*
+
+
+screenshots/
+
+
+# Local/vendor caches
+tools/sdk-verify/*.zip
+harness-*.txt
+query
+metweaksconfig.ini
+

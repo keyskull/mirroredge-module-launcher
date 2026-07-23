@@ -1,0 +1,159 @@
+{
+    "schemaVersion":  1,
+    "runId":  "20260702-123641Z",
+    "testMachine":  "2号机",
+    "suite":  "run-all-scenarios",
+    "startedAt":  "2026-07-02T12:36:41.9496485Z",
+    "finishedAt":  "2026-07-02T15:13:57.9645127Z",
+    "durationMs":  9436015,
+    "passCount":  3,
+    "totalCount":  19,
+    "pass":  false,
+    "gitAtStart":  {
+                       "commit":  "2872d921f39fe2f7ffd08b2142b61c4e6b719a85",
+                       "shortCommit":  "2872d92",
+                       "branch":  "main",
+                       "subject":  "Merge branch \u0027main\u0027 of https://github.com/keyskull/mirroredge-module-launcher",
+                       "author":  "Cullen",
+                       "commitDate":  "2026-07-02T14:28:50+03:00",
+                       "dirty":  true,
+                       "dirtyFiles":  [
+                                          "runtime/engine/borderless/viewport.cpp",
+                                          "runtime/engine/borderless/window.cpp",
+                                          "shared/engine_module_client.cpp",
+                                          "tools/debug-harness/lib/DebugHarness.psm1"
+                                      ]
+                   },
+    "gitAtEnd":  {
+                     "commit":  "2872d921f39fe2f7ffd08b2142b61c4e6b719a85",
+                     "shortCommit":  "2872d92",
+                     "branch":  "main",
+                     "subject":  "Merge branch \u0027main\u0027 of https://github.com/keyskull/mirroredge-module-launcher",
+                     "author":  "Cullen",
+                     "commitDate":  "2026-07-02T14:28:50+03:00",
+                     "dirty":  true,
+                     "dirtyFiles":  [
+                                        "runtime/engine/borderless/viewport.cpp",
+                                        "runtime/engine/borderless/window.cpp",
+                                        "shared/engine_module_client.cpp",
+                                        "tools/debug-harness/last-run-all.log",
+                                        "tools/debug-harness/lib/DebugHarness.psm1"
+                                    ]
+                 },
+    "results":  [
+                    {
+                        "scenario":  "verify-harness",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "ui-launcher",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "smoke-split",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "borderless-window",
+                        "pass":  false,
+                        "attempts":  2,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "inject-mp",
+                        "pass":  false,
+                        "attempts":  2,
+                        "error":  "True"
+                    },
+                    {
+                        "scenario":  "mod-deps",
+                        "pass":  false,
+                        "attempts":  2,
+                        "error":  "True"
+                    },
+                    {
+                        "scenario":  "mp-core-functional",
+                        "pass":  false,
+                        "attempts":  2,
+                        "error":  "True"
+                    },
+                    {
+                        "scenario":  "multiplayer-functional",
+                        "pass":  false,
+                        "attempts":  2,
+                        "error":  "True"
+                    },
+                    {
+                        "scenario":  "trainer-functional",
+                        "pass":  false,
+                        "attempts":  2,
+                        "error":  "True"
+                    },
+                    {
+                        "scenario":  "mod-manager-config",
+                        "pass":  false,
+                        "attempts":  2,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "dolly-functional",
+                        "pass":  false,
+                        "attempts":  2,
+                        "error":  "zombie EPROCESS PID 57000 on retry"
+                    },
+                    {
+                        "scenario":  "mp-functional",
+                        "pass":  false,
+                        "attempts":  0,
+                        "error":  "skipped: zombie EPROCESS PID 57000 after dolly-functional"
+                    },
+                    {
+                        "scenario":  "mp-gui-test",
+                        "pass":  false,
+                        "attempts":  0,
+                        "error":  "skipped: zombie EPROCESS PID 57000 after dolly-functional"
+                    },
+                    {
+                        "scenario":  "ui-module-manager",
+                        "pass":  false,
+                        "attempts":  0,
+                        "error":  "skipped: zombie EPROCESS PID 57000 after dolly-functional"
+                    },
+                    {
+                        "scenario":  "visual-test",
+                        "pass":  false,
+                        "attempts":  0,
+                        "error":  "skipped: zombie EPROCESS PID 57000 after dolly-functional"
+                    },
+                    {
+                        "scenario":  "mod-full",
+                        "pass":  false,
+                        "attempts":  0,
+                        "error":  "skipped: zombie EPROCESS PID 57000 after dolly-functional"
+                    },
+                    {
+                        "scenario":  "mp-playthrough-bots",
+                        "pass":  false,
+                        "attempts":  0,
+                        "error":  "skipped: zombie EPROCESS PID 57000 after dolly-functional"
+                    },
+                    {
+                        "scenario":  "user-flow",
+                        "pass":  false,
+                        "attempts":  0,
+                        "error":  "skipped: zombie EPROCESS PID 57000 after dolly-functional"
+                    },
+                    {
+                        "scenario":  "user-full-session",
+                        "pass":  false,
+                        "attempts":  0,
+                        "error":  "skipped: zombie EPROCESS PID 57000 after dolly-functional"
+                    }
+                ]
+}

@@ -1,0 +1,6 @@
+LIBRARY core
+EXPORTS
+    MMOD_PluginInitialize
+    MMOD_PluginShutdown
+    MMOD_GetMmultiplayerApi
+    MMOD_GetRuntimeVersion

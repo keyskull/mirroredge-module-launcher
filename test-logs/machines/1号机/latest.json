@@ -1,0 +1,166 @@
+{
+    "schemaVersion":  1,
+    "runId":  "20260704-031518Z",
+    "testMachine":  "1号机",
+    "suite":  "run-all-scenarios",
+    "startedAt":  "2026-07-04T03:15:18.9825223Z",
+    "finishedAt":  "2026-07-04T04:13:34.4915415Z",
+    "durationMs":  3495509,
+    "passCount":  15,
+    "totalCount":  19,
+    "pass":  false,
+    "gitAtStart":  {
+                       "commit":  "e558d7424ff045d48892de5d17208514d5ee6bcd",
+                       "shortCommit":  "e558d74",
+                       "branch":  "main",
+                       "subject":  "test-logs: 1ÕÅÀµ£║ run-all-scenarios 15/19 @ 0a5cad9",
+                       "author":  "Cullen",
+                       "commitDate":  "2026-07-04T06:01:03+03:00",
+                       "dirty":  true,
+                       "dirtyFiles":  [
+                                          "build.ps1",
+                                          "docs/ai-debug-harness.md",
+                                          "docs/sdk-verification.md",
+                                          "test-logs/CHANGELOG.md",
+                                          "tools/debug-harness/lib/DebugHarness.psm1",
+                                          "tools/sdk-verify/README.md",
+                                          "tools/sdk-verify/reference/sdk-reference-lite.json",
+                                          "tools/sdk-verify/verify-sdk.ps1"
+                                      ]
+                   },
+    "gitAtEnd":  {
+                     "commit":  "e558d7424ff045d48892de5d17208514d5ee6bcd",
+                     "shortCommit":  "e558d74",
+                     "branch":  "main",
+                     "subject":  "test-logs: 1ÕÅÀµ£║ run-all-scenarios 15/19 @ 0a5cad9",
+                     "author":  "Cullen",
+                     "commitDate":  "2026-07-04T06:01:03+03:00",
+                     "dirty":  true,
+                     "dirtyFiles":  [
+                                        "build.ps1",
+                                        "docs/ai-debug-harness.md",
+                                        "docs/sdk-verification.md",
+                                        "test-logs/CHANGELOG.md",
+                                        "tools/debug-harness/lib/DebugHarness.psm1",
+                                        "tools/sdk-verify/README.md",
+                                        "tools/sdk-verify/reference/sdk-reference-lite.json",
+                                        "tools/sdk-verify/verify-sdk.ps1"
+                                    ]
+                 },
+    "results":  [
+                    {
+                        "scenario":  "verify-harness",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "ui-launcher",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "smoke-split",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "borderless-window",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "inject-mp",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "mod-deps",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "mp-core-functional",
+                        "pass":  false,
+                        "attempts":  2,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "multiplayer-functional",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "trainer-functional",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "mod-manager-config",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "dolly-functional",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "mp-functional",
+                        "pass":  false,
+                        "attempts":  2,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "mp-gui-test",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "ui-module-manager",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "visual-test",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "mod-full",
+                        "pass":  false,
+                        "attempts":  2,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "mp-playthrough-bots",
+                        "pass":  false,
+                        "attempts":  2,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "user-flow",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    },
+                    {
+                        "scenario":  "user-full-session",
+                        "pass":  true,
+                        "attempts":  1,
+                        "error":  ""
+                    }
+                ]
+}

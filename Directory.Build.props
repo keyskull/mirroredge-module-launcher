@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <_DxSdkVendorRoot>$(MSBuildThisFileDirectory)third_party\dxsdk\</_DxSdkVendorRoot>
+    <_DxSdkLegacyInclude>C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Include</_DxSdkLegacyInclude>
+    <_DxSdkLegacyLib>C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x86</_DxSdkLegacyLib>
+    <DxSdkRoot>$(_DxSdkVendorRoot)</DxSdkRoot>
+  </PropertyGroup>
+  <PropertyGroup Condition="Exists('$(_DxSdkVendorRoot)include\d3dx9.h')">
+    <DxSdkInclude>$(_DxSdkVendorRoot)include</DxSdkInclude>
+    <DxSdkLibX86>$(_DxSdkVendorRoot)lib\x86</DxSdkLibX86>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(DxSdkInclude)' == '' and Exists('$(_DxSdkLegacyInclude)\d3dx9.h')">
+    <DxSdkInclude>$(_DxSdkLegacyInclude)</DxSdkInclude>
+    <DxSdkLibX86>$(_DxSdkLegacyLib)</DxSdkLibX86>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(DxSdkInclude)' != ''">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(DxSdkInclude);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(DxSdkLibX86);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+</Project>

@@ -1,0 +1,6 @@
+LIBRARY mmultiplayer
+EXPORTS
+    MMOD_PluginInitialize
+    MMOD_PluginShutdown
+    MMOD_GetPluginInfo
+    MMOD_GetMmultiplayerApi

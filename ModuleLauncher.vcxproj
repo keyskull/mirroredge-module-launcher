@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <ItemGroup Label="ProjectConfigurations">
+
+    <ProjectConfiguration Include="Debug|Win32">
+
+      <Configuration>Debug</Configuration>
+
+      <Platform>Win32</Platform>
+
+    </ProjectConfiguration>
+
+    <ProjectConfiguration Include="Release|Win32">
+
+      <Configuration>Release</Configuration>
+
+      <Platform>Win32</Platform>
+
+    </ProjectConfiguration>
+
+  </ItemGroup>
+
+  <PropertyGroup Label="Globals">
+
+    <VCProjectVersion>16.0</VCProjectVersion>
+
+    <ProjectGuid>{E4A91B62-7F3C-4D5E-9A10-123456789ABC}</ProjectGuid>
+
+    <RootNamespace>ModuleLauncher</RootNamespace>
+
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+
+    <ConfigurationType>Application</ConfigurationType>
+
+    <UseDebugLibraries>true</UseDebugLibraries>
+
+    <PlatformToolset>v143</PlatformToolset>
+
+    <CharacterSet>Unicode</CharacterSet>
+
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+
+    <ConfigurationType>Application</ConfigurationType>
+
+    <UseDebugLibraries>false</UseDebugLibraries>
+
+    <PlatformToolset>v143</PlatformToolset>
+
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+
+    <CharacterSet>Unicode</CharacterSet>
+
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+
+  </ImportGroup>
+
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+
+  </ImportGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+
+    <LinkIncremental>false</LinkIncremental>
+
+    <OutDir>$(ProjectDir)dist\</OutDir>
+
+    <IntDir>$(ProjectDir)obj\$(Configuration)\</IntDir>
+
+    <TargetName>ModuleLauncher</TargetName>
+
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+
+    <LinkIncremental>true</LinkIncremental>
+
+    <OutDir>$(ProjectDir)dist\</OutDir>
+
+    <IntDir>$(ProjectDir)obj\$(Configuration)\</IntDir>
+
+    <TargetName>ModuleLauncher</TargetName>
+
+  </PropertyGroup>
+
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+
+    <ClCompile>
+
+      <WarningLevel>Level3</WarningLevel>
+
+      <SDLCheck>true</SDLCheck>
+
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
+      <ConformanceMode>true</ConformanceMode>
+
+      <AdditionalIncludeDirectories>$(ProjectDir)launcher;$(ProjectDir)shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+
+    </ClCompile>
+
+    <Link>
+
+      <SubSystem>Windows</SubSystem>
+
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+
+      <EntryPointSymbol>wWinMainCRTStartup</EntryPointSymbol>
+
+    </Link>
+
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+
+    <ClCompile>
+
+      <WarningLevel>Level3</WarningLevel>
+
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+
+      <SDLCheck>true</SDLCheck>
+
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+
+      <ConformanceMode>true</ConformanceMode>
+
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+
+      <AdditionalIncludeDirectories>$(ProjectDir)launcher;$(ProjectDir)shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+
+    </ClCompile>
+
+    <Link>
+
+      <SubSystem>Windows</SubSystem>
+
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+
+      <OptimizeReferences>true</OptimizeReferences>
+
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+
+      <UACExecutionLevel>asInvoker</UACExecutionLevel>
+
+      <EntryPointSymbol>wWinMainCRTStartup</EntryPointSymbol>
+
+    </Link>
+
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+
+    <ClCompile Include="launcher\config.cpp" />
+
+    <ClCompile Include="launcher\game_config.cpp" />
+
+    <ClCompile Include="launcher\game_path.cpp" />
+
+    <ClCompile Include="launcher\game_launch.cpp" />
+
+    <ClCompile Include="launcher\input_restore.cpp" />
+
+    <ClCompile Include="launcher\injection_flow.cpp" />
+
+    <ClCompile Include="launcher\launcher_settings.cpp" />
+
+    <ClCompile Include="shared\deploy_settings.cpp" />
+
+    <ClCompile Include="launcher\log_server.cpp" />
+
+    <ClCompile Include="launcher\config_integrity_bypass.cpp" />
+
+    <ClCompile Include="launcher\diagnostics_session.cpp" />
+
+    <ClCompile Include="launcher\main.cpp" />
+
+    <ClCompile Include="launcher\paths.cpp" />
+
+    <ClCompile Include="launcher\process_util.cpp" />
+
+    <ClCompile Include="launcher\update_check.cpp" />
+
+    <ClCompile Include="launcher\ui\status_dialog.cpp" />
+
+  </ItemGroup>
+
+  <ItemGroup>
+
+    <ClInclude Include="launcher\config.h" />
+
+    <ClInclude Include="launcher\game_path.h" />
+
+    <ClInclude Include="launcher\game_config.h" />
+
+    <ClInclude Include="launcher\game_launch.h" />
+
+    <ClInclude Include="launcher\injection_flow.h" />
+
+    <ClInclude Include="launcher\launcher_settings.h" />
+
+    <ClInclude Include="launcher\log_server.h" />
+
+    <ClInclude Include="launcher\config_integrity_bypass.h" />
+
+    <ClInclude Include="launcher\paths.h" />
+
+    <ClInclude Include="launcher\process_util.h" />
+
+    <ClInclude Include="launcher\stdafx.h" />
+
+    <ClInclude Include="launcher\update_check.h" />
+
+    <ClInclude Include="launcher\ui\status_dialog.h" />
+
+  </ItemGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+
+</Project>
+

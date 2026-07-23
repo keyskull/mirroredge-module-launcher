@@ -1,0 +1,120 @@
+#include <Windows.h>
+#include <Psapi.h>
+#include <TlHelp32.h>
+#include <conio.h>
+#include <stdio.h>
+#include <string>
+
+#include "debug.h"
+
+static bool GetImageBase(void *pc, void **base) {
+    // CBA to use PEB
+    const auto snapshot =
+        CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, GetCurrentProcessId());
+
+    if (snapshot == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+
+    MODULEENTRY32 entry = {sizeof(MODULEENTRY32)};
+    if (Module32First(snapshot, &entry)) {
+        do {
+            if (pc >= entry.modBaseAddr && pc < entry.modBaseAddr + entry.modBaseSize) {
+                if (base) {
+                    *base = reinterpret_cast<void *>(entry.modBaseAddr);
+                }
+                
+                CloseHandle(snapshot);
+                return true;
+            }
+        } while (Module32Next(snapshot, &entry));
+    }
+
+    CloseHandle(snapshot);
+    return false;
+}
+
+static std::string GetPrettyPointer(long ptr) {
+    char buffer[MAX_PATH] = {0};
+
+    void *base;
+    if (GetImageBase(reinterpret_cast<void *>(ptr), &base)) {
+        wchar_t fileName[MAX_PATH];
+
+        if (GetModuleBaseName(GetCurrentProcess(), static_cast<HMODULE>(base), fileName,
+                              ARRAYSIZE(fileName) - 1)) {
+
+            snprintf(buffer, sizeof(buffer), "0x%08lX (%ws+0x%lX)", ptr, fileName,
+                      ptr - reinterpret_cast<long>(base));
+
+            return buffer;
+        }
+    }
+
+    snprintf(buffer, sizeof(buffer), "%08lX", ptr);
+    return buffer;
+}
+
+static long WINAPI ExceptionHandler(EXCEPTION_POINTERS *exception) {
+    if (IsDebuggerPresent()) {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    // Do not SuspendThread other threads — leaves the process wedged if we exit.
+    Debug::CreateConsole();
+
+    printf("An unhandled exception occured at:\n\t%s (0x%lX)\n\n",
+           GetPrettyPointer(exception->ContextRecord->Eip).c_str(),
+           exception->ExceptionRecord->ExceptionCode);
+
+    printf("Context:\n");
+    printf("\tEAX=0x%08lX ECX=0x%08lX EDX=0x%08lX EBX=0x%08lX\n", exception->ContextRecord->Eax,
+           exception->ContextRecord->Ecx, exception->ContextRecord->Edx,
+           exception->ContextRecord->Ebx);
+    printf("\tESI=0x%08lX EDI=0x%08lX EBP=0x%08lX ESP=0x%08lX\n\n", exception->ContextRecord->Esi,
+           exception->ContextRecord->Edi, exception->ContextRecord->Ebp,
+           exception->ContextRecord->Esp);
+
+    printf("Stack trace:\n");
+    auto esp = (exception->ContextRecord->Esp / sizeof(DWORD)) * sizeof(DWORD);
+    for (auto i = 0; i < 200; ++i) {
+        long ptr = 0;
+
+        // Safe read without SEH
+        if (!ReadProcessMemory(GetCurrentProcess(), reinterpret_cast<void *>(esp), &ptr,
+                               sizeof(ptr), nullptr)) {
+            break;
+        }
+
+        void *base;
+        if (GetImageBase(reinterpret_cast<void *>(ptr), &base)) {
+            printf("\t%s\n", GetPrettyPointer(ptr).c_str());
+        }
+
+        esp += sizeof(DWORD);
+    }
+
+    printf("\nIf this was unexpected, please copy this output and create an "
+           "issue at:\n\thttps://github.com/btbd/mmultiplayer/issues\n\n");
+
+    printf("Press any key to exit...");
+    static_cast<void>(_getch());
+
+    exit(1);
+
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+void Debug::Initialize() {
+    // Intentionally disabled during normal play. Installing the crash handler
+    // here can terminate the game on benign exceptions at the main menu.
+}
+
+void Debug::CreateConsole() {
+    AllocConsole();
+
+    FILE *old;
+    static_cast<VOID>(freopen_s(&old, "CONIN$", "r", stdin));
+    static_cast<VOID>(freopen_s(&old, "CONOUT$", "w", stdout));
+    static_cast<VOID>(freopen_s(&old, "CONOUT$", "w", stderr));
+}

@@ -1,0 +1,30 @@
+{
+    "schemaVersion":  1,
+    "updatedAt":  "2026-07-04T04:13:34.4915415Z",
+    "machines":  {
+                     "2号机":  {
+                                 "runId":  "20260702-123641Z",
+                                 "finishedAt":  "2026-07-02T15:13:57.9645127Z",
+                                 "suite":  "run-all-scenarios",
+                                 "passCount":  3,
+                                 "totalCount":  19,
+                                 "pass":  false,
+                                 "shortCommit":  "2872d92",
+                                 "branch":  "main",
+                                 "subject":  "Merge branch \u0027main\u0027 of https://github.com/keyskull/mirroredge-module-launcher",
+                                 "dirty":  true
+                             },
+                     "1号机":  {
+                                 "runId":  "20260704-031518Z",
+                                 "finishedAt":  "2026-07-04T04:13:34.4915415Z",
+                                 "suite":  "run-all-scenarios",
+                                 "passCount":  15,
+                                 "totalCount":  19,
+                                 "pass":  false,
+                                 "shortCommit":  "e558d74",
+                                 "branch":  "main",
+                                 "subject":  "test-logs: 1ÕÅÀµ£║ run-all-scenarios 15/19 @ 0a5cad9",
+                                 "dirty":  true
+                             }
+                 }
+}
