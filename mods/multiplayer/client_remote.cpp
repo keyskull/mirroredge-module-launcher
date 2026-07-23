@@ -1597,6 +1597,11 @@ void ApplyPacketSnapshot(Client::Player *player,
         player->LastAppliedSeq = seq;
         CommitPacketSnapshot(player, packet, hasVelocityTrailer, hasMoveTrailer);
         DrainReorderPending(player);
+        static std::unordered_set<uint32_t> loggedSeqStream;
+        if (loggedSeqStream.insert(player->Id).second) {
+            ClientLogf("client: udp seq stream id=%x firstSeq=%u", player->Id,
+                       seq);
+        }
         return;
     }
 

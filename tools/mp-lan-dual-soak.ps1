@@ -1,14 +1,12 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
-  LAN dual real-client soak (host + client roles).
+  LAN dual real-client soak (host + client).
 
-  Interim mesh/motion gate remains: tools/mp-real-level-bots.ps1
-  This script coordinates two real MirrorsEdge.exe peers for soak.
+  Host:  .\tools\mp-lan-dual-soak.ps1 -Role host -SoakMinutes 15
+  Client:.\tools\mp-lan-dual-soak.ps1 -Role client -PeerIp <host-lan-ip> -SoakMinutes 15
 
-  Host:
-    .\tools\mp-lan-dual-soak.ps1 -Role host -SoakMinutes 15
-  Client:
-    .\tools\mp-lan-dual-soak.ps1 -Role client -PeerIp 192.168.x.x -SoakMinutes 15
+  Client automates: Start-SplitInjectionSession -> START_NEW_GAME -> inject MP
+  (server=PeerIp) -> FORCE_HOSTED_LIVE -> soak poll on client.log / GET_STATUS.
 
   Paths from deploy.config.json / ME_DEPLOY_PATH only.
 #>
@@ -38,8 +36,15 @@ function Write-SoakCoord {
     param([string]$Status, [hashtable]$Extra = @{})
     $data = @{ role = $Role; room = $Room; status = $Status; at = (Get-Date).ToString("o") }
     foreach ($k in $Extra.Keys) { $data[$k] = $Extra[$k] }
-    try { Write-HarnessCoordination -Status ("lan-soak-{0}-{1}" -f $Role, $Status) -Summary $data }
-    catch { Write-Host ("lan-soak: WARN coordination write failed ({0})" -f $_.Exception.Message) }
+    try {
+        Write-HarnessCoordination -Status ("lan-soak-{0}-{1}" -f $Role, $Status) -Summary $data
+    } catch {
+        Write-Host ("lan-soak: WARN coordination write failed ({0})" -f $_.Exception.Message)
+    }
+}
+
+function Invoke-CoreQ([string]$cmd, [int]$TimeoutMs = 12000) {
+    return Invoke-ModControlPipe -Command $cmd -Target core -TimeoutMs $TimeoutMs
 }
 
 Write-Host ("lan-soak: role={0} room={1} soak={2}m" -f $Role, $Room, $SoakMinutes)
@@ -55,7 +60,7 @@ if ($Role -eq "host") {
     $realLevel = Join-Path $repoRoot "tools\mp-real-level-bots.ps1"
     if (-not (Test-Path -LiteralPath $realLevel)) { throw "lan-soak: missing $realLevel" }
     $playSec = [Math]::Max(90, $SoakMinutes * 60)
-    & $realLevel -BotCount 2 -PlaySeconds $playSec -SkipBuild:$SkipBuild
+    & $realLevel -BotCount 2 -PlaySeconds $playSec
     $exit = $LASTEXITCODE
     if ($null -eq $exit) { $exit = 0 }
     if ($exit -ne 0) {
@@ -72,37 +77,116 @@ if ([string]::IsNullOrWhiteSpace($PeerIp)) {
 }
 
 $settingsPath = Join-Path $env:TEMP "multiplayer.settings"
-$json = @"
-{
-  "client": {
-    "server": "$PeerIp",
-    "room": "$Room",
-    "name": "LanSoakClient"
-  }
-}
-"@
-Set-Content -LiteralPath $settingsPath -Value $json -Encoding UTF8
-Write-Host ("lan-soak client: wrote {0} server={1} room={2}" -f $settingsPath, $PeerIp, $Room)
-Write-SoakCoord -Status "settings-ready" -Extra @{ peerIp = $PeerIp }
-Write-Host "lan-soak client: manual steps (automated dual-launch TBD):"
-Write-Host "  1. Deploy same build (.\build.ps1)."
-Write-Host "  2. Launch game; inject core + multiplayer."
-Write-Host ("  3. Confirm server={0} room={1}." -f $PeerIp, $Room)
-Write-Host "  4. START_NEW_GAME / Story -> tutorial_p; Set Gameplay."
-Write-Host "  5. Watch %TEMP%\mirroredge-multiplayer-client.log for spawn ok + remote pose."
-Write-Host ("  6. Soak {0}m; on crash run collect-diagnostics.ps1." -f $SoakMinutes)
-
-$deadline = (Get-Date).AddMinutes($SoakMinutes)
-Write-SoakCoord -Status "client-ready" -Extra @{ peerIp = $PeerIp }
-Write-Host ("lan-soak client: soak until {0:u}" -f $deadline)
-while ((Get-Date) -lt $deadline) {
-    Start-Sleep -Seconds 30
-    $log = Join-Path $env:TEMP "mirroredge-multiplayer-client.log"
-    if (Test-Path -LiteralPath $log) {
-        $tail = Get-Content -LiteralPath $log -Tail 3 -ErrorAction SilentlyContinue
-        if ($tail) { Write-Host ("lan-soak client: log tail: {0}" -f ($tail -join " | ")) }
+$jsonObj = [ordered]@{
+    client = [ordered]@{
+        server = $PeerIp
+        room   = $Room
+        name   = "LanSoakClient"
     }
 }
-Write-SoakCoord -Status "pass"
-Write-Host "lan-soak client: soak window finished (verify runbook 8 gates)"
+($jsonObj | ConvertTo-Json -Depth 5) | Set-Content -LiteralPath $settingsPath -Encoding ASCII
+Write-Host ("lan-soak client: wrote {0} server={1} room={2}" -f $settingsPath, $PeerIp, $Room)
+Write-SoakCoord -Status "settings-ready" -Extra @{ peerIp = $PeerIp }
+
+$ctx = $null
+try {
+    $ctx = Start-SplitInjectionSession -RepoRoot $repoRoot -SkipBuild:$SkipBuild -StopExisting
+    Assert-ValidHarnessContext -Value $ctx -Scenario "mp-lan-dual-soak-client"
+
+    Wait-ManagerHooksReady -BootNudge -TimeoutSec 180 | Out-Null
+    Invoke-EnsureCoreLoaded -LogPath (Get-SafeContextLogPath -Context $ctx) | Out-Null
+    Invoke-ModControlPipe -Command "RELOAD_SETTINGS" -Target core -TimeoutMs 20000 | Out-Null
+
+    Enable-HarnessIntroHangImmunity -Seconds 300
+    Invoke-GameIntroSkip -MinBootSec 20 -KeepFocused
+    Invoke-GameIntroSkipBlind -SkipRounds 12 -KeepFocused
+    Wait-GameMainMenuReady -KeepFocused -TimeoutSec 300 -MaxSkipRounds 40 -StablePolls 2 | Out-Null
+
+    Write-Host "lan-soak client: START_NEW_GAME"
+    $r = Invoke-CoreQ "START_NEW_GAME"
+    if ($r -notmatch '^OK') { throw ("START_NEW_GAME failed: {0}" -f $r) }
+
+    $mapReady = $false
+    $level = "tutorial_p"
+    for ($i = 0; $i -lt 240; $i++) {
+        $st = Get-MmultiplayerStatusJson -ErrorAction SilentlyContinue
+        $map = ""
+        if ($st) {
+            if ($st.currentMap) { $map = [string]$st.currentMap }
+            elseif ($st.clientMap) { $map = [string]$st.clientMap }
+        }
+        if ($map -and $map -ne "tdmainmenu" -and $map -ne "gameplay") {
+            $level = $map
+            $mapReady = $true
+            Write-Host ("lan-soak client: level={0}" -f $level)
+            break
+        }
+        if (($i % 8) -eq 0) {
+            Invoke-CoreQ "INJECT_KEY 0x0D" | Out-Null
+            Start-Sleep -Milliseconds 80
+            Invoke-CoreQ "INJECT_KEY 0x0D UP" | Out-Null
+        }
+        Start-Sleep 1
+    }
+    if (-not $mapReady) { throw "lan-soak client: map never left tdmainmenu" }
+
+    for ($d = 0; $d -lt 16; $d++) {
+        foreach ($vk in @(0x1B, 0x0D, 0x20, 0x10)) {
+            Invoke-CoreQ ("INJECT_KEY 0x{0:X2}" -f $vk) | Out-Null
+            Start-Sleep -Milliseconds 40
+            Invoke-CoreQ ("INJECT_KEY 0x{0:X2} UP" -f $vk) | Out-Null
+        }
+    }
+
+    Write-Host "lan-soak client: hooks after map"
+    Invoke-CoreQ "ENSURE_GAMEPLAY_HOOKS" | Out-Null
+    Invoke-CoreQ "ENSURE_MP_HOOKS" | Out-Null
+    Start-Sleep 8
+
+    # Rewrite settings again immediately before inject (DLL Init reads file).
+    ($jsonObj | ConvertTo-Json -Depth 5) | Set-Content -LiteralPath $settingsPath -Encoding ASCII
+    $inj = Invoke-ModControlPipe -Command "INJECT multiplayer" -Target manager -TimeoutMs 120000
+    Write-Host ("lan-soak client: INJECT multiplayer -> {0}" -f $inj)
+    Wait-ModuleManagerLoadLog -ModuleId "multiplayer" -TimeoutSec 120 | Out-Null
+    Start-Sleep 3
+
+    Write-Host "lan-soak client: FORCE_HOSTED_LIVE"
+    Invoke-CoreQ "FORCE_HOSTED_LIVE" | Out-Null
+    Write-SoakCoord -Status "client-ready" -Extra @{ peerIp = $PeerIp; level = $level }
+
+    $clientLog = Join-Path $env:TEMP "mirroredge-multiplayer-client.log"
+    $deadline = (Get-Date).AddMinutes($SoakMinutes)
+    $sawPose = $false
+    $sawLive = $false
+    Write-Host ("lan-soak client: soak until {0:u}" -f $deadline)
+    while ((Get-Date) -lt $deadline) {
+        Assert-GameProcessAlive -Label "lan-soak-client" -SkipHangCheck | Out-Null
+        if (Test-Path -LiteralPath $clientLog) {
+            $tail = Get-Content -LiteralPath $clientLog -Tail 80 -ErrorAction SilentlyContinue
+            if ($tail -match 'activation set live') { $sawLive = $true }
+            if ($tail -match 'remote pose applied|remote bones applied') { $sawPose = $true }
+            if ($tail) {
+                Write-Host ("lan-soak client: log: {0}" -f (($tail | Select-Object -Last 2) -join " | "))
+            }
+        }
+        try {
+            $st = Get-MmultiplayerStatusJson
+            Write-Host ("lan-soak client: rem={0} sp={1} map={2}" -f $st.mpRemotePlayers, $st.mpSpawnedPlayers, $st.currentMap)
+        } catch {}
+        Start-Sleep -Seconds 15
+    }
+
+    if (-not $sawLive) {
+        Write-Host "lan-soak client: WARN no 'activation set live' in client.log (peer may not have joined)"
+    }
+    if (-not $sawPose -and $SoakMinutes -ge 5) {
+        throw "lan-soak client: no remote pose/bones in client.log during soak"
+    }
+    Write-SoakCoord -Status "pass" -Extra @{ sawLive = $sawLive; sawPose = $sawPose }
+    Write-Host "lan-soak client: PASS"
+} finally {
+    if ($ctx) {
+        try { Complete-SplitInjectionSession -Context $ctx | Out-Null } catch {}
+    }
+}
 exit 0

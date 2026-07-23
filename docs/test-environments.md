@@ -117,7 +117,7 @@ Two-machine soak for real peers (heartbeat / level sync). Bots alone do **not** 
 | Host (1号机) | `.\tools\mp-lan-dual-soak.ps1 -Role host -SoakMinutes 15` |
 | Client (2号机) | `.\tools\mp-lan-dual-soak.ps1 -Role client -PeerIp <host-lan-ip> -Room lan-soak -SoakMinutes 15` |
 
-- Host advertises LAN IPv4 via coordination (`obj/harness-coord.json`) and runs `mp-real-level-bots` for the soak window (bots keep host UDP live until peer joins).
-- Client writes `%TEMP%\multiplayer.settings` (`server`/`room`) and prints manual inject / Set Gameplay steps; tails `mirroredge-multiplayer-client.log`.
-- Pass criteria: runbook 8 gates on both machines + no server `timed out` / room wipe mid-soak.
-- Interim single-machine gate: `.\tools\mp-real-level-bots.ps1 -BotCount 2 -PlaySeconds 90`.
+- Host advertises LAN IPv4 via coordination (`obj/harness-coord.json`) and runs `mp-real-level-bots` for the soak window.
+- Client **automates** `Start-SplitInjectionSession` → `START_NEW_GAME` → inject MP (`server=PeerIp`) → `FORCE_HOSTED_LIVE` → soak poll on `client.log` / `GET_STATUS`.
+- Pass criteria: runbook 8 gates on host; client sees `activation set live` and remote pose/bones when peer is up.
+- Interim single-machine gate: `.\tools\mp-real-level-bots.ps1 -BotCount 2 -PlaySeconds 90` (also requires `udp seq stream` for 1.2.11+).

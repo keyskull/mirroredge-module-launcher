@@ -7152,254 +7152,43 @@ function Test-MmultiplayerPlaythroughWithBots {
         [int]$IntroSkipRounds = 15
     )
 
-    $focus = [bool]$KeepFocused
-    if (-not $PSBoundParameters.ContainsKey('KeepFocused')) {
-        $focus = $true
-    }
-
+    # KI-2026-005: do NOT use Enter-only menu navigation or pre-level
+    # ENSURE_GAMEPLAY_HOOKS (Failed approaches). Delegate to the verified
+    # mp-real-level-bots path (START_NEW_GAME -> hooks after map -> FORCE_HOSTED_LIVE).
     $repo = Get-RepoRoot
     $interactionLog = Get-HarnessInteractionLogPath
     Write-Host "playthrough: interaction log -> $interactionLog"
     Write-HarnessInteraction -Phase "session" -Action "start" -Data @{
         botCount    = $BotCount
         playSeconds = $PlaySeconds
+        delegatedTo = "mp-real-level-bots"
     }
 
-    $serverProc = $null
-    $botProcs = @()
-    $targetFile = Join-Path $env:TEMP "mirroredge-bot-target.json"
-    $mpEnabled = $false
-    if (Test-Path $targetFile) { Remove-Item $targetFile -Force }
+    $realLevel = Join-Path $repo "tools\mp-real-level-bots.ps1"
+    if (-not (Test-Path -LiteralPath $realLevel)) {
+        throw "playthrough: missing $realLevel"
+    }
 
+    Write-Host "playthrough: delegating to mp-real-level-bots (KI-2026-005 verified path)"
     try {
-        Wait-ManagerHooksReady -KeepFocused:$focus -BootNudge | Out-Null
-        Write-HarnessInteraction -Phase "session" -Action "overlay_ready" -Data @{}
-
-        Write-HarnessClientSettingsFile -Filename "core.settings" | Out-Null
-
-        Write-HarnessInteraction -Phase "session" -Action "core_autoload_wait" -Data @{}
-        Invoke-EnsureCoreLoaded -LogPath (Get-SafeContextLogPath -Context $Context) | Out-Null
-        Close-ManagerOverlays
-
-        Write-HarnessInteraction -Phase "session" -Action "core_ready" -Data @{}
-
-        $reload = Invoke-ModControlPipe -Command "RELOAD_SETTINGS" `
-            -Target core -TimeoutMs 20000
-        if ($reload -ne "OK") {
-            throw "RELOAD_SETTINGS failed: $reload"
+        & $realLevel -BotCount $BotCount -PlaySeconds ([Math]::Max(90, $PlaySeconds))
+        $exit = $LASTEXITCODE
+        if ($null -eq $exit) { $exit = 0 }
+        if ($exit -ne 0) {
+            throw "playthrough: mp-real-level-bots EXIT=$exit"
         }
-        Write-HarnessInteraction -Phase "session" -Action "client_configured" `
-            -Data @{ server = "127.0.0.1"; room = "playthrough-lobby"; source = "core.settings" }
-
-        Enable-HarnessIntroHangImmunity -Seconds 300
-        Assert-GameProcessAlive -Label "before intro skip" -SkipHangCheck | Out-Null
-
-        Invoke-GameIntroSkip -MinBootSec $MinIntroBootSec -KeepFocused:$focus
-        Invoke-GameIntroSkipBlind -SkipRounds $IntroSkipRounds -KeepFocused:$focus
-        Wait-GameMainMenuReady -KeepFocused:$focus -TimeoutSec 300 `
-            -MaxSkipRounds 40 -StablePolls 2 | Out-Null
-        Write-HarnessInteraction -Phase "menu" -Action "main_menu_ready" `
-            -Data @{ source = "Wait-GameMainMenuReady" }
-
-        Write-Host "playthrough: settling at main menu before multiplayer inject"
-        Close-ManagerOverlays
-        Start-Sleep -Seconds 5
-        Assert-GameProcessAlive -Label "post-menu settle" -SkipHangCheck | Out-Null
-
-        Write-Host "playthrough: re-checking overlay after intro"
-        Wait-ManagerHooksReady -KeepFocused:$focus -BootNudge -TimeoutSec 120 | Out-Null
-
-        Write-HarnessClientSettingsFile -Filename "multiplayer.settings" | Out-Null
-        $serverProc = Start-MmultiplayerServer -RepoRoot $repo
-        Start-Sleep -Seconds 2
-
-        Write-Host "playthrough: injecting multiplayer at main menu"
-        $injectResult = ""
-        try {
-            $injectResult = Invoke-ModControlPipe -Command "INJECT multiplayer" `
-                -Target manager -TimeoutMs 120000
-        } catch {
-            $injectResult = $_.Exception.Message
-        }
-
-        $injectAccepted = Test-ManagerModuleInjectAccepted -Result $injectResult
-        $loadPending = Test-ManagerModuleLoadPending -ModuleId "multiplayer"
-        if (-not $injectAccepted -and -not $loadPending) {
-            Write-Host "playthrough: pipe INJECT failed ($injectResult); trying Modules UI"
-            try {
-                Open-ModuleManagerMenuGui -TimeoutSec 60 | Out-Null
-                Invoke-ModUiTabClick -TabName "Modules" -TimeoutSec 60 | Out-Null
-                Invoke-ManagerModuleInject -ModuleId "multiplayer" -TimeoutSec 120 | Out-Null
-            } catch {
-                if (Test-ManagerModuleLoadPending -ModuleId "multiplayer") {
-                    Write-Host "playthrough: UI inject skipped; load already in progress"
-                } else {
-                    throw
-                }
-            }
-        } elseif (-not $injectAccepted -and $loadPending) {
-            Write-Host "playthrough: inject pending ($injectResult); waiting for load log"
-        } elseif ($injectResult -ne "OK") {
-            Write-Host "playthrough: inject accepted ($injectResult)"
-        }
-        Wait-ModuleManagerLoadLog -ModuleId "multiplayer" -TimeoutSec 120 | Out-Null
-        $mpEnabled = $true
-        Wait-ManagerUiState -Label "multiplayer loaded" -TimeoutSec 60 `
-            -Predicate {
-                param($s)
-                $mod = @($s.modules | Where-Object {
-                        $_.id -eq "multiplayer" -and $_.loaded -eq $true
-                    })
-                $mod.Count -gt 0
-            } | Out-Null
-        Write-HarnessInteraction -Phase "session" -Action "multiplayer_injected" -Data @{
-            source = "post-intro main menu"
-        }
-
-        Close-ManagerOverlays
-        Write-Host "playthrough: waiting for server connection at menu (listener from plugin init)"
-        try {
-            $menuConnected = Wait-MmultiplayerConnected -KeepFocused:$focus -TimeoutSec 180
-        } catch {
-            try {
-                $logTail = Invoke-ModControlPipe -Command "GET_LOG 80" -Target manager -TimeoutMs 8000
-                if ($logTail -match "H-CONN|client:|listener") {
-                    Write-Host "playthrough: manager log (mp connect):"
-                    Write-Host $logTail
-                }
-            } catch {}
-            throw
-        }
-        Write-Host ("playthrough: connected at menu (map={0})" -f $menuConnected.currentMap)
-        Write-HarnessInteraction -Phase "session" -Action "connected_at_menu" -Data @{
-            map = [string]$menuConnected.currentMap
-        }
-
-        $botSpecs = @("Bot-Kate|1", "Bot-Miller|5", "Bot-Celeste|2")
-        if ($BotCount -lt $botSpecs.Count) {
-            $botSpecs = $botSpecs[0..([Math]::Max(0, $BotCount - 1))]
-        }
-
-        Write-Host "playthrough: spawning bots at main menu (tdmainmenu)"
-        $botProcs = Start-MultiplayerFollowBots -TargetFile $targetFile `
-            -Room "playthrough-lobby" -Level "tdmainmenu" -BotSpecs $botSpecs
-        foreach ($spec in $botSpecs) {
-            Write-HarnessInteraction -Phase "bots" -Action "spawn" `
-                -Data @{ spec = $spec; level = "tdmainmenu" }
-        }
-
-        Write-Host "playthrough: waiting for remote players at menu..."
-        $remoteDeadline = (Get-Date).AddSeconds(90)
-        $remoteOk = $false
-        while ((Get-Date) -lt $remoteDeadline) {
-            if ($focus) {
-                try { Focus-GameWindow -Process (Get-GameProcess) } catch {}
-            }
-            $status = Update-MultiplayerBotTargetFile -Path $targetFile
-            Write-HarnessInteraction -Phase "bots" -Action "remote_poll" -Data @{
-                mpRemotePlayers = [int]$status.mpRemotePlayers
-                need            = $BotCount
-            }
-            if ($status.mpRemotePlayers -ge $BotCount) {
-                Write-Host ("playthrough: remote players visible: {0}" -f $status.mpRemotePlayers)
-                Write-HarnessInteraction -Phase "bots" -Action "remote_ready" -Data @{
-                    mpRemotePlayers = [int]$status.mpRemotePlayers
-                }
-                $remoteOk = $true
-                break
-            }
-            Start-Sleep -Milliseconds 500
-        }
-        if (-not $remoteOk) {
-            $last = Get-MmultiplayerStatusJson
-            throw "Expected >= $BotCount remote players at menu, got $($last.mpRemotePlayers)"
-        }
-
-        Write-Host "playthrough: entering campaign level from menu"
-        Enable-HarnessIntroHangImmunity -Seconds 300
-        Invoke-EnsurePlaythroughRuntimeHooks -TimeoutSec 45 -KeepFocused:$focus
-        $levelMap = Invoke-PlaythroughStartCampaignFromMenu -MaxEnterRounds 5 `
-            -KeepFocused:$focus
-        Write-Host ("playthrough: level ready (map={0})" -f $levelMap)
-        Write-HarnessInteraction -Phase "session" -Action "in_level" -Data @{ map = $levelMap }
-
-        $connected = Wait-MmultiplayerConnected -KeepFocused:$focus -TimeoutSec 60
-        Write-Host ("playthrough: connected in level (map={0})" -f $connected.currentMap)
-        Write-HarnessInteraction -Phase "session" -Action "connected_in_level" -Data @{
-            map = [string]$connected.currentMap
-        }
-
-        Write-Host "playthrough: waiting for remote players after level entry..."
-        $remoteDeadline = (Get-Date).AddSeconds(60)
-        $remoteOk = $false
-        while ((Get-Date) -lt $remoteDeadline) {
-            if ($focus) {
-                try { Focus-GameWindow -Process (Get-GameProcess) } catch {}
-            }
-            $status = Update-MultiplayerBotTargetFile -Path $targetFile
-            Write-HarnessInteraction -Phase "bots" -Action "remote_poll_in_level" -Data @{
-                mpRemotePlayers = [int]$status.mpRemotePlayers
-                need            = $BotCount
-                map             = [string]$status.currentMap
-            }
-            if ($status.mpRemotePlayers -ge $BotCount) {
-                Write-Host ("playthrough: remote players in level: {0}" -f $status.mpRemotePlayers)
-                $remoteOk = $true
-                break
-            }
-            Start-Sleep -Milliseconds 500
-        }
-        if (-not $remoteOk) {
-            $last = Get-MmultiplayerStatusJson
-            throw "Expected >= $BotCount remote players in level, got $($last.mpRemotePlayers)"
-        }
-
-        Write-Host "playthrough: settling after level entry (8s)"
-        Write-HarnessInteraction -Phase "bots" -Action "spawn_settle" -Data @{ seconds = 8 }
-        Start-Sleep -Seconds 8
-
-        Wait-HarnessPlayerPose -KeepFocused:$focus -TimeoutSec 45 | Out-Null
-
-        Write-Host "playthrough: simulating player movement ($PlaySeconds s)"
-        Invoke-GamePlaythroughMovementWithLog -DurationSec $PlaySeconds `
-            -TargetFile $targetFile -KeepFocused:$focus
-
-        $final = $null
-        try {
-            $final = Get-MmultiplayerStatusJson
-        } catch {
-            Write-Host "playthrough: WARN final status poll failed ($($_.Exception.Message))"
-        }
-        if ($final) {
-            if (-not (Test-MultiplayerHarnessConnected $final)) {
-                throw "Lost server connection during playthrough"
-            }
-            if ($final.mpRemotePlayers -lt $BotCount) {
-                throw "Remote players dropped during playthrough ($($final.mpRemotePlayers) < $BotCount)"
-            }
-        }
-
         Write-HarnessInteraction -Phase "session" -Action "pass" -Data @{
-            map             = if ($final) { [string]$final.currentMap } else { [string]$levelMap }
-            mpRemotePlayers = if ($final) { [int]$final.mpRemotePlayers } else { $BotCount }
-            interactionLog  = $interactionLog
+            delegatedTo = "mp-real-level-bots"
+            exit        = $exit
         }
-        Write-Host ("playthrough: PASS connected={0} remotes={1} map={2}" -f `
-            $(if ($final) { $final.mpConnected } else { $true }), `
-            $(if ($final) { $final.mpRemotePlayers } else { $BotCount }), `
-            $(if ($final) { $final.currentMap } else { $levelMap }))
-        Write-Host "playthrough: interaction log -> $interactionLog"
+        Write-Host "playthrough: PASS (via mp-real-level-bots)"
     } finally {
-        Stop-MultiplayerFollowBots -BotProcesses $botProcs -TargetFile $targetFile
-        if ($mpEnabled) {
+        if ($Context) {
             try {
-                Invoke-GamePlaythroughPrepareForQuit -KeepFocused:$focus
+                Complete-SplitInjectionSession -Context $Context | Out-Null
             } catch {
-                Write-Host "playthrough: WARN quit prepare failed ($($_.Exception.Message))"
+                Write-Host "playthrough: WARN complete session failed ($($_.Exception.Message))"
             }
-        }
-        if ($serverProc -and -not $serverProc.HasExited) {
-            Stop-Process -Id $serverProc.Id -Force -ErrorAction SilentlyContinue
         }
     }
 }

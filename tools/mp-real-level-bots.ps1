@@ -1250,6 +1250,7 @@ $botCyclePlayback = $false
 $softCollisionLogged = $false
 $tagModeLogged = $false
 $interactLogged = $false
+$udpSeqStream = $false
 # $BoneDump set in poll loop; re-resolve if missing
 if (-not $BoneDump) { $BoneDump = Join-Path $env:TEMP "mirroredge-host-bones.bin" }
 if (-not $BoneCycle) { $BoneCycle = Join-Path $env:TEMP "mirroredge-host-bones-cycle.bin" }
@@ -1265,6 +1266,7 @@ if (Test-Path $ClientLog) {
     $hostMeshAtomsLogged = [bool]($all | Where-Object { $_ -match 'host Mesh3p atoms=' } | Select-Object -First 1)
     $transformBonesLogged = [bool]($all | Where-Object { $_ -match 'TransformBones visual=' } | Select-Object -First 1)
     $remoteBonesLive = [bool]($all | Where-Object { $_ -match 'remote bones live stream' } | Select-Object -First 1)
+    $udpSeqStream = [bool]($all | Where-Object { $_ -match 'udp seq stream' } | Select-Object -First 1)
 }
 # SoftProbe gates (softColl / Tag / Interact / physics) must appear AFTER SoftProbe start.
 $SoftCollFlag = Join-Path $env:TEMP "mirroredge-soft-collision.ok"
@@ -1360,7 +1362,7 @@ $walkClipOk = ((Get-BoneCycleFrameCount (Join-Path $env:TEMP "mirroredge-bone-cl
 $fallClipOk = ((Get-BoneCycleFrameCount (Join-Path $env:TEMP "mirroredge-bone-clip-Falling.bin")) -ge 4)
 if ($walkClipOk) { Note "BONUS: Walking Mesh3p clip >=4 frames" }
 if ($fallClipOk) { Note "BONUS: Falling Mesh3p clip >=4 frames" }
-Note "client.log spawn ok=$logSpawn pose=$logPose activationLive=$activation hostPosOk=$hostPosOk bonesSampled=$bonesSampled boneDumpOk=$boneDumpOk boneCycleOk=$boneCycleOk boneCycleLogged=$bonesCycleLogged remoteBones=$remoteBonesApplied velocity=$remoteVelocityActive hostAtoms=$hostMeshAtomsLogged xform=$transformBonesLogged pushRelay=$pushRelayOk liveStream=$remoteBonesLive botCycle=$botCyclePlayback softColl=$softCollisionOk tag=$tagModeOk interact=$interactOk floor=$physicsFloorOk wall=$physicsWallOk probe=$softProbeStarted"
+Note "client.log spawn ok=$logSpawn pose=$logPose activationLive=$activation hostPosOk=$hostPosOk bonesSampled=$bonesSampled boneDumpOk=$boneDumpOk boneCycleOk=$boneCycleOk boneCycleLogged=$bonesCycleLogged remoteBones=$remoteBonesApplied velocity=$remoteVelocityActive hostAtoms=$hostMeshAtomsLogged xform=$transformBonesLogged pushRelay=$pushRelayOk liveStream=$remoteBonesLive botCycle=$botCyclePlayback udpSeq=$udpSeqStream softColl=$softCollisionOk tag=$tagModeOk interact=$interactOk floor=$physicsFloorOk wall=$physicsWallOk probe=$softProbeStarted"
 
 $mapOk = ($st.map -eq $Level -or $st.map -match 'tutorial' -or
           ($st.map -eq 'gameplay' -and $hostPosOk))
@@ -1391,7 +1393,8 @@ $script:Evidence.preBotHostSec = $preBotHostSec
 $remoteBonesOk = ($remoteBonesApplied -ge $BotCount)
 $phase8Ok = $remoteBonesLive -and $botCyclePlayback
 $script:Evidence.phase8Ok = $phase8Ok
-$script:Evidence.motionPass = [bool]($script:Evidence.pass -and $bonesSampled -and $boneDumpOk -and $remoteBonesOk -and $boneCycleOk -and $bonesCycleLogged -and $remoteVelocityActive -and $hostMeshAtomsLogged -and $transformBonesLogged -and $pushRelayOk -and $phase8Ok -and $softCollisionOk -and $tagModeOk -and $interactOk -and $physicsFloorOk -and $physicsWallOk)
+$script:Evidence.udpSeqStream = $udpSeqStream
+$script:Evidence.motionPass = [bool]($script:Evidence.pass -and $bonesSampled -and $boneDumpOk -and $remoteBonesOk -and $boneCycleOk -and $bonesCycleLogged -and $remoteVelocityActive -and $hostMeshAtomsLogged -and $transformBonesLogged -and $pushRelayOk -and $phase8Ok -and $udpSeqStream -and $softCollisionOk -and $tagModeOk -and $interactOk -and $physicsFloorOk -and $physicsWallOk)
 
 if (-not $mapOk) { FailNote ("Map not tutorial: '{0}'" -f $st.map) }
 if (-not $hostPosOk) {
@@ -1423,6 +1426,9 @@ if (-not $transformBonesLogged) {
 }
 if (-not $pushRelayOk) {
     FailNote "Server push-relay not verified (need banner + push>0 in %TEMP%\\mmultiplayer-server.log)"
+}
+if (-not $udpSeqStream) {
+    FailNote "No 'udp seq stream' in client.log (1.2.11 Seq trailer 692B; bot.ps1 must stamp Seq)"
 }
 if (-not $remoteBonesLive) {
     FailNote "No 'remote bones live stream' in client.log (phase8: continuous UDP compressed bones)"
