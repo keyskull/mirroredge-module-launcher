@@ -59,6 +59,7 @@ int interpolationDelayBaseMs = 100;
 bool poseSmoothEnabled = true;
 float poseSmoothAlpha = 0.45f;
 float poseSnapUu = 350.0f;
+int hostPoseTxMaxHz = 60;
 bool boneSmoothEnabled = true;
 float boneSmoothAlpha = 0.55f;
 float boneSmoothIdleAlpha = 0.70f;

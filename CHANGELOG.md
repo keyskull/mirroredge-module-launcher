@@ -6,6 +6,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Version numbers follow [Semantic Versioning](https://semver.org/).  
 Authoritative version: [`version.json`](version.json) (synced to `shared/product_version.h` at build).
 
+## [1.2.11] - 2026-07-23
+
+### Added
+
+- **UDP Seq + reorder** — pose packets may carry a 2-byte `Seq` trailer (692 B); receivers buffer up to 4 out-of-order packets before From/To apply. Legacy 676–690 peers still work. Server opaque-forwards `676–692` (no dual push+pull).
+- **Host TX rate cap** — `client.hostPoseTxMaxHz` (default 60; 0 = unlimited). Idle floor ~15 Hz; parkour / movement-state changes bypass. Multiplayer UI slider.
+- **LAN dual soak script** — `tools/mp-lan-dual-soak.ps1` (`-Role host|client`) for 1号机/2号机 coordination; see [`docs/test-environments.md`](docs/test-environments.md).
+
+### Fixed
+
+- **KI-2026-005 playthrough harness** — `mp-playthrough-bots` delegates to the verified `mp-real-level-bots` `START_NEW_GAME` path (no Enter-only / pre-level hooks).
+
+### Changed
+
+- **CI Release** — tag `v1.2.11` builds the auto-update zip on Actions (DXSDK vendor + UTF-8 `release.yml`).
+
 ## [1.2.10] - 2026-07-23
 
 ### Added

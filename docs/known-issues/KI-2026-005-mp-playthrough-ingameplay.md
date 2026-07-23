@@ -5,9 +5,9 @@
 | 字段 | 值 |
 |------|-----|
 | **ID** | KI-2026-005 |
-| **状态** | `open` |
+| **状态** | `mitigated` |
 | **首次记录** | 2026-06-30 |
-| **最后验证** | 2026-07-19 |
+| **最后验证** | 2026-07-23 |
 | **区域** | module_manager / harness / multiplayer |
 | **标签** | `playthrough`, `harness`, `ingameplay`, `currentMap`, `thread-safety`, `crash` |
 
@@ -139,6 +139,7 @@
 
 | 日期 | 作者 | 说明 |
 |------|------|------|
+| 2026-07-23 | playthrough path | **Harness path fix:** `tools/debug-harness/scenarios/mp-playthrough-bots.ps1` now delegates to `tools/mp-real-level-bots.ps1` (`START_NEW_GAME` → hooks after map → `FORCE_HOSTED_LIVE` → Follow bots). Status → `mitigated`. Two-machine LAN soak script: `tools/mp-lan-dual-soak.ps1` (manual client inject still required). Do not reintroduce Enter-only / pre-level `ENSURE_GAMEPLAY_HOOKS`. |
 | 2026-07-19 | visual bots | **Harness PASS (log)**: spawn ok×2 + `set material` + pose after Loading no longer blanks `GetPlayerController(false)`. Bot Follow still starts far from host — near-camera mesh not yet solidly proven in screenshots. |
 | 2026-07-19 | cold warm speedup | Removed `TryFindTdPlayerController` from warm; SEH SuperField IsA; spawn-before-warm. Verified Steam: `queue→spawn ok` ~7s for 2 bots. |
 | 2026-07-19 | host UDP heartbeat | `OnLocalPoseNetworkTick` sends empty packets when live but no pawn so pull-model server relays bot poses. Verified `remote pose applied`×2. |

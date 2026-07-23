@@ -110,6 +110,8 @@ extern float boneSmoothIdleAlpha; // stronger EMA when remote nearly idle
 extern float boneSmoothWalkAlpha; // follow walk cycle faster than idle
 extern bool showRemoteStanceOnNametag;
 extern float poseSnapUu;      // snap instead of lerp/EMA beyond this distance
+// Host pose TX rate cap (Hz). 0 = unlimited. Parkour/state-change bypass.
+extern int hostPoseTxMaxHz;
 extern bool showLatency;
 extern int latencyMs;
 
@@ -236,7 +238,8 @@ void ApplyInitialRemotePlayerPose(Client::Player *player);
 void ApplyPacketSnapshot(Client::Player *player,
                          const Client::PACKET_COMPRESSED &packet,
                          bool hasVelocityTrailer = false,
-                         bool hasMoveTrailer = false);
+                         bool hasMoveTrailer = false,
+                         bool hasSeqTrailer = false);
 void BuildRenderedPacket(Client::Player *player, Client::PACKET &packet);
 
 void InstallClientNetworkTickHooks();

@@ -64,12 +64,20 @@ class Client {
         // Remotes stay mesh+TransformBones — no AnimTree ProcessEvent (KI-012).
         unsigned char MovementState;
         unsigned char Physics;
+        // Optional seq trailer (after 690). Client reorder only; server opaque.
+        unsigned short Seq;
     } PACKET_COMPRESSED;
 #pragma pack(pop)
 
-    // 676 legacy + 12 Velocity + 2 move/phys = 690.
-    static_assert(sizeof(PACKET_COMPRESSED) == 690,
+    // 676 legacy + 12 Velocity + 2 move/phys + 2 Seq = 692.
+    static_assert(sizeof(PACKET_COMPRESSED) == 692,
                   "PACKET_COMPRESSED size drift — update server/bot accept range");
+
+    static const int kPacketBytesLegacy = 676;
+    static const int kPacketBytesVelocity = 688;
+    static const int kPacketBytesMove = 690;
+    static const int kPacketBytesSeq = 692;
+    static const int kReorderSlots = 4;
 
     class Player {
       public:
@@ -126,6 +134,18 @@ class Client {
         float UdpIntervalEmaMs = 50.0f;
         float UdpJitterPeakMs = 50.0f;
         int InterpDelayMs = 0; // 0 → use global interpolationDelayMs
+
+        // Seq reorder (client-only; no ACK / dual push+pull).
+        bool HasSeqStream = false;
+        unsigned short LastAppliedSeq = 0;
+        struct ReorderSlot {
+            bool occupied = false;
+            unsigned short seq = 0;
+            PACKET_COMPRESSED packet = {};
+            bool hasVelocity = false;
+            bool hasMove = false;
+            unsigned long long recvMs = 0;
+        } Pending[kReorderSlots];
 
         std::string GameMode;
         bool CanTag = false;

@@ -57,7 +57,8 @@ const (
 	DefaultDiscoveryPort = "5223"
 	PacketSizeLegacy     = 676
 	PacketSizeVelocity   = 688 // phase4: +12 Velocity
-	PacketSize           = 690 // B3-lite: +2 MovementState/Physics
+	PacketSizeMove       = 690 // B3-lite: +2 MovementState/Physics
+	PacketSize           = 692 // +2 Seq (client reorder; opaque on server)
 	TagGameMode          = "tag"
 	TagTouchMeters       = 1.3
 	InteractMaxMeters    = 3.0

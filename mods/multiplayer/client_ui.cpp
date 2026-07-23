@@ -702,6 +702,13 @@ void MultiplayerTab() {
             Settings::SetSetting("client", "poseSnapUu", poseSnapUu);
         }
     }
+    if (ImGui::SliderInt("Host TX Max Hz##client-host-tx-hz", &hostPoseTxMaxHz,
+                         0, 120)) {
+        Settings::SetSetting("client", "hostPoseTxMaxHz", hostPoseTxMaxHz);
+    }
+    if (hostPoseTxMaxHz == 0) {
+        ImGui::TextDisabled("0 = unlimited (parkour still bypasses cap)");
+    }
 
     if (ImGui::Checkbox("Bone Smooth##client-bone-smooth", &boneSmoothEnabled)) {
         Settings::SetSetting("client", "boneSmooth", boneSmoothEnabled);

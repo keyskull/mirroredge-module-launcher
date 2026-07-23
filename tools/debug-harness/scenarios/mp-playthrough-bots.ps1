@@ -1,41 +1,41 @@
 #Requires -Version 5.1
 <#
-  Real player playthrough with follower bots:
-    Launch game -> inject core -> enter a level from main menu ->
-    connect to local multiplayer-server -> spawn bots that chase the player ->
-    simulate WASD movement so remote characters follow in-world.
+  Real player playthrough with follower bots (KI-2026-005).
 
-  Visual check: keep the game window focused during the run; you should see
-  other player models (Kate, Miller, …) trailing HarnessPlayer.
+  Delegates to the verified mp-real-level-bots entry path:
+    START_NEW_GAME -> tutorial_p -> ENSURE_GAMEPLAY_HOOKS -> MP inject ->
+    FORCE_HOSTED_LIVE -> Follow bots -> SoftProbe / movement.
+
+  Do NOT use pre-level ENSURE_GAMEPLAY_HOOKS or Enter-only menu navigation
+  (KI-2026-005 Failed approaches).
 #>
 param(
     [switch]$SkipLaunch,
     [switch]$SkipBuild,
     [int]$BotCount = 2,
-    [int]$PlaySeconds = 25,
+    [int]$PlaySeconds = 90,
     [int]$MinIntroBootSec = 25,
     [int]$IntroSkipRounds = 15
 )
 
 $ErrorActionPreference = "Stop"
-$lib = Join-Path $PSScriptRoot "..\lib\DebugHarness.psm1"
-Import-Module $lib -Force
-
-$repo = Get-RepoRoot
 
 if ($SkipLaunch) {
     throw "mp-playthrough-bots: requires live game session (no -SkipLaunch)"
 }
 
-$ctx = Start-SplitInjectionSession -RepoRoot $repo -SkipBuild:$SkipBuild `
-    -StopExisting
-Assert-ValidHarnessContext -Value $ctx -Scenario "mp-playthrough-bots"
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..\..")).Path
+$realLevel = Join-Path $repoRoot "tools\mp-real-level-bots.ps1"
+if (-not (Test-Path -LiteralPath $realLevel)) {
+    throw "mp-playthrough-bots: missing $realLevel"
+}
 
-Test-MmultiplayerPlaythroughWithBots -Context $ctx -KeepFocused `
-    -BotCount $BotCount -PlaySeconds $PlaySeconds `
-    -MinIntroBootSec $MinIntroBootSec -IntroSkipRounds $IntroSkipRounds | Out-Null
-
-Write-Host "interaction log: $(Get-HarnessInteractionLogPath)"
-Write-Host "mp-playthrough-bots: PASS"
-Complete-SplitInjectionSession -Context $ctx | Out-Null
+Write-Host "mp-playthrough-bots: delegating to mp-real-level-bots (KI-2026-005 verified path)"
+& $realLevel -BotCount $BotCount -PlaySeconds $PlaySeconds -SkipBuild:$SkipBuild
+$exit = $LASTEXITCODE
+if ($null -eq $exit) { $exit = 0 }
+if ($exit -ne 0) {
+    throw "mp-playthrough-bots: mp-real-level-bots failed EXIT=$exit"
+}
+Write-Host "mp-playthrough-bots: PASS (via mp-real-level-bots)"
 exit 0

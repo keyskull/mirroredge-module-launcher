@@ -365,6 +365,14 @@ bool ClientPlugin::Initialize() {
         Settings::GetSetting("client", "poseSmoothAlpha", 0.45f).get<float>();
     poseSnapUu =
         Settings::GetSetting("client", "poseSnapUu", 350.0f).get<float>();
+    hostPoseTxMaxHz =
+        Settings::GetSetting("client", "hostPoseTxMaxHz", 60).get<int>();
+    if (hostPoseTxMaxHz < 0) {
+        hostPoseTxMaxHz = 0;
+    }
+    if (hostPoseTxMaxHz > 120) {
+        hostPoseTxMaxHz = 120;
+    }
     boneSmoothEnabled =
         Settings::GetSetting("client", "boneSmooth", true).get<bool>();
     boneSmoothAlpha =

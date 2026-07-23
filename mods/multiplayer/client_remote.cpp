@@ -53,6 +53,11 @@ void ClearPlayerRemoteVisual(Client::Player *p) {
     p->UdpIntervalEmaMs = 50.0f;
     p->UdpJitterPeakMs = 50.0f;
     p->InterpDelayMs = 0;
+    p->HasSeqStream = false;
+    p->LastAppliedSeq = 0;
+    for (int i = 0; i < Client::kReorderSlots; ++i) {
+        p->Pending[i] = {};
+    }
 }
 
 bool TryReadPlayerRemoteSkel(Client::Player *p,
@@ -1299,9 +1304,50 @@ static bool PacketHasBoneMotion(const Client::PACKET_COMPRESSED &packet) {
     return false;
 }
 
-void ApplyPacketSnapshot(Client::Player *player,
-                                const Client::PACKET_COMPRESSED &packet,
-                                bool hasVelocityTrailer, bool hasMoveTrailer) {
+static unsigned short NextPoseSeq() {
+    static unsigned short s_poseSeq = 0;
+    return ++s_poseSeq;
+}
+
+static void StampPoseSeq(Client::PACKET_COMPRESSED &packet) {
+    packet.Seq = NextPoseSeq();
+}
+
+// Returns true if send should proceed. Parkour / state-change always pass.
+static bool AllowHostPoseSend(bool parkourOrStateChange, bool nearlyIdle,
+                              float dPos2) {
+    static unsigned long long s_lastSendMs = 0;
+    const auto nowMs = GetTickCount64();
+    if (parkourOrStateChange) {
+        s_lastSendMs = nowMs;
+        return true;
+    }
+    unsigned long long minGap = 0;
+    if (hostPoseTxMaxHz > 0) {
+        minGap = 1000ull / static_cast<unsigned long long>(hostPoseTxMaxHz);
+        if (minGap < 8ull) {
+            minGap = 8ull;
+        }
+    }
+    // Idle TX floor ~15 Hz when nearly still (pos updates still reach Follow).
+    if (nearlyIdle && dPos2 < 25.0f && minGap < 66ull) {
+        minGap = 66ull;
+    }
+    if (minGap > 0ull && (nowMs - s_lastSendMs) < minGap) {
+        return false;
+    }
+    s_lastSendMs = nowMs;
+    return true;
+}
+
+static bool SeqAheadOrEqual(unsigned short a, unsigned short b) {
+    // a >= b with uint16 wrap (half-range window).
+    return static_cast<unsigned short>(a - b) < 0x8000u;
+}
+
+static void CommitPacketSnapshot(Client::Player *player,
+                                 const Client::PACKET_COMPRESSED &packet,
+                                 bool hasVelocityTrailer, bool hasMoveTrailer) {
     const auto now = GetTickCount64();
 
     if (player->ToTime) {
@@ -1456,6 +1502,137 @@ void ApplyPacketSnapshot(Client::Player *player,
         if (initialPoseQueued.insert(player->Id).second) {
             QueueClientEngineTask([player]() { ApplyInitialRemotePlayerPose(player); });
         }
+    }
+}
+
+static void DrainReorderPending(Client::Player *player) {
+    for (;;) {
+        const unsigned short want =
+            static_cast<unsigned short>(player->LastAppliedSeq + 1);
+        bool found = false;
+        for (int i = 0; i < Client::kReorderSlots; ++i) {
+            auto &slot = player->Pending[i];
+            if (!slot.occupied || slot.seq != want) {
+                continue;
+            }
+            CommitPacketSnapshot(player, slot.packet, slot.hasVelocity,
+                                 slot.hasMove);
+            player->LastAppliedSeq = want;
+            slot = {};
+            found = true;
+            break;
+        }
+        if (!found) {
+            break;
+        }
+    }
+}
+
+static void FlushStaleReorder(Client::Player *player, unsigned long long nowMs) {
+    // If the next seq never arrives, skip forward to the oldest pending after
+    // ~2× peer UDP interval (min 80ms / max 250ms).
+    float waitMs = player->UdpIntervalEmaMs * 2.0f;
+    if (waitMs < 80.0f) {
+        waitMs = 80.0f;
+    }
+    if (waitMs > 250.0f) {
+        waitMs = 250.0f;
+    }
+    unsigned short bestSeq = 0;
+    int bestIdx = -1;
+    unsigned long long bestAge = 0;
+    for (int i = 0; i < Client::kReorderSlots; ++i) {
+        auto &slot = player->Pending[i];
+        if (!slot.occupied) {
+            continue;
+        }
+        const unsigned long long age =
+            (nowMs > slot.recvMs) ? (nowMs - slot.recvMs) : 0ull;
+        if (age < static_cast<unsigned long long>(waitMs)) {
+            continue;
+        }
+        if (bestIdx < 0 ||
+            static_cast<unsigned short>(slot.seq - player->LastAppliedSeq) <
+                static_cast<unsigned short>(bestSeq - player->LastAppliedSeq)) {
+            bestIdx = i;
+            bestSeq = slot.seq;
+            bestAge = age;
+        }
+    }
+    if (bestIdx < 0) {
+        return;
+    }
+    auto &slot = player->Pending[bestIdx];
+    static unsigned long long s_lastReorderSkipLog = 0;
+    if (nowMs - s_lastReorderSkipLog > 2000ull) {
+        s_lastReorderSkipLog = nowMs;
+        ClientLogf("client: udp reorder skip id=%x from=%u to=%u age=%llu",
+                   player->Id, player->LastAppliedSeq, slot.seq, bestAge);
+    }
+    CommitPacketSnapshot(player, slot.packet, slot.hasVelocity, slot.hasMove);
+    player->LastAppliedSeq = slot.seq;
+    slot = {};
+    DrainReorderPending(player);
+}
+
+void ApplyPacketSnapshot(Client::Player *player,
+                                const Client::PACKET_COMPRESSED &packet,
+                                bool hasVelocityTrailer, bool hasMoveTrailer,
+                                bool hasSeqTrailer) {
+    if (!player) {
+        return;
+    }
+    if (!hasSeqTrailer) {
+        // Legacy peers: last-write-wins (pre-seq behavior).
+        CommitPacketSnapshot(player, packet, hasVelocityTrailer, hasMoveTrailer);
+        return;
+    }
+
+    const unsigned short seq = packet.Seq;
+    const auto nowMs = GetTickCount64();
+    FlushStaleReorder(player, nowMs);
+
+    if (!player->HasSeqStream) {
+        player->HasSeqStream = true;
+        player->LastAppliedSeq = seq;
+        CommitPacketSnapshot(player, packet, hasVelocityTrailer, hasMoveTrailer);
+        DrainReorderPending(player);
+        return;
+    }
+
+    // Duplicate / already applied.
+    if (seq == player->LastAppliedSeq ||
+        SeqAheadOrEqual(player->LastAppliedSeq, seq)) {
+        return;
+    }
+
+    const unsigned short expect =
+        static_cast<unsigned short>(player->LastAppliedSeq + 1);
+    if (seq == expect) {
+        CommitPacketSnapshot(player, packet, hasVelocityTrailer, hasMoveTrailer);
+        player->LastAppliedSeq = seq;
+        DrainReorderPending(player);
+        return;
+    }
+
+    // Gap: stash if within window, else skip-forward to latest.
+    const unsigned short ahead =
+        static_cast<unsigned short>(seq - player->LastAppliedSeq);
+    if (ahead > 0 && ahead <= Client::kReorderSlots) {
+        auto &slot = player->Pending[seq % Client::kReorderSlots];
+        slot.occupied = true;
+        slot.seq = seq;
+        slot.packet = packet;
+        slot.hasVelocity = hasVelocityTrailer;
+        slot.hasMove = hasMoveTrailer;
+        slot.recvMs = nowMs;
+        return;
+    }
+
+    CommitPacketSnapshot(player, packet, hasVelocityTrailer, hasMoveTrailer);
+    player->LastAppliedSeq = seq;
+    for (int i = 0; i < Client::kReorderSlots; ++i) {
+        player->Pending[i] = {};
     }
 }
 void TrackRemotePlayerSpawnResults() {
@@ -1750,6 +1927,7 @@ void OnLocalPoseNetworkTick() {
                            static_cast<unsigned>(packet.Yaw));
             }
         }
+        StampPoseSeq(packet);
         sendto(udpSocket, reinterpret_cast<const char *>(&packet), sizeof(packet),
                0, reinterpret_cast<const sockaddr *>(&server), sizeof(server));
         UpdateHarnessSnapshot();
@@ -1795,6 +1973,7 @@ void OnLocalPoseNetworkTick() {
                 }
             }
         }
+        StampPoseSeq(packet);
         sendto(udpSocket, reinterpret_cast<const char *>(&packet),
                sizeof(packet), 0, reinterpret_cast<const sockaddr *>(&server),
                sizeof(server));
@@ -2000,23 +2179,19 @@ void OnLocalPoseNetworkTick() {
         }
     }
 
-    // Idle TX: send full packet at most ~10Hz when nearly still (pos still
-    // updates for Follow). Parkour moves / state changes keep per-tick bones.
-    static unsigned long long s_lastIdleSendMs = 0;
+    // Idle TX + optional hostPoseTxMaxHz cap. Parkour / state changes bypass.
     static Classes::FVector s_lastSentPos = {};
     const bool nearlyIdle = spd2 <= 25.0f && !parkourMove && !moveChanged;
     const float ddx = packet.Position.X - s_lastSentPos.X;
     const float ddy = packet.Position.Y - s_lastSentPos.Y;
     const float ddz = packet.Position.Z - s_lastSentPos.Z;
     const float dPos2 = ddx * ddx + ddy * ddy + ddz * ddz;
-    const auto nowSendMs = GetTickCount64();
-    if (nearlyIdle && dPos2 < 25.0f &&
-        (nowSendMs - s_lastIdleSendMs) < 66ull) {
+    if (!AllowHostPoseSend(parkourMove || moveChanged, nearlyIdle, dPos2)) {
         return;
     }
-    s_lastIdleSendMs = nowSendMs;
     s_lastSentPos = packet.Position;
 
+    StampPoseSeq(packet);
     sendto(udpSocket, reinterpret_cast<const char *>(&packet), sizeof(packet),
            0, reinterpret_cast<const sockaddr *>(&server), sizeof(server));
 }

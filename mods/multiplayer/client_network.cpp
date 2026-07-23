@@ -387,23 +387,24 @@ void PlayerHandlerBody() {
             continue;
         }
 
-        // 676 = legacy; 688 = +Velocity; 690 = +MovementState/Physics (B3-lite).
-        const int kLegacyPacketBytes = 676;
-        const int kVelocityPacketBytes = 688;
-        const int kFullPacketBytes =
-            static_cast<int>(sizeof(Client::PACKET_COMPRESSED));
-        if (n < kLegacyPacketBytes || n > kFullPacketBytes) {
+        // 676 = legacy; 688 = +Velocity; 690 = +Move/Phys; 692 = +Seq.
+        const int kLegacyPacketBytes = Client::kPacketBytesLegacy;
+        const int kVelocityPacketBytes = Client::kPacketBytesVelocity;
+        const int kMovePacketBytes = Client::kPacketBytesMove;
+        const int kSeqPacketBytes = Client::kPacketBytesSeq;
+        if (n < kLegacyPacketBytes || n > kSeqPacketBytes) {
             continue;
         }
         const bool hasVelocityTrailer = (n >= kVelocityPacketBytes);
-        const bool hasMoveTrailer = (n >= kFullPacketBytes);
+        const bool hasMoveTrailer = (n >= kMovePacketBytes);
+        const bool hasSeqTrailer = (n >= kSeqPacketBytes);
 
         players.Mutex.lock();
 
         const auto player = GetPlayerById(packet.Id);
         if (player) {
             ApplyPacketSnapshot(player, packet, hasVelocityTrailer,
-                                hasMoveTrailer);
+                                hasMoveTrailer, hasSeqTrailer);
         }
 
         players.Mutex.unlock();

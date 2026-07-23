@@ -104,7 +104,10 @@ $CompressedBoneOffsets = @(
 )
 
 $BoneCount = $CompressedBoneOffsets.Count
-$PacketSize = 690  # B3-lite: 688 + MovementState/Physics; server accepts 676-690
+$PacketSize = 692  # +Seq; server accepts 676-692
+$PacketSizeLegacy = 676
+$PacketSizeVelocity = 688
+$PacketSizeMove = 690
 
 if (-not $BoneFile -and -not $NoBones) {
     $defaultBones = Join-Path $env:TEMP "mirroredge-host-bones.bin"
@@ -133,9 +136,11 @@ using System.Text;
 using System.Threading;
 
 public static class MirrorBot {
-    public const int PacketSize = 690;
+    public const int PacketSize = 692;
     public const int PacketSizeLegacy = 676;
     public const int PacketSizeVelocity = 688;
+    public const int PacketSizeMove = 690;
+    static ushort s_seq = 0;
 
     public static byte[] BuildPacket(uint id, float x, float y, float z, ushort yaw, short[] bones, float vx, float vy, float vz, byte movementState = 0, byte physics = 0) {
         byte[] buf = new byte[PacketSize];
@@ -156,6 +161,8 @@ public static class MirrorBot {
         // MovementState + Physics (B3-lite). Bots set from motion heuristic.
         buf[off++] = movementState;
         buf[off++] = physics;
+        s_seq++;
+        BitConverter.GetBytes(s_seq).CopyTo(buf, off);
         return buf;
     }
 

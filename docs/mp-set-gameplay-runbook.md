@@ -201,6 +201,8 @@ Full history: [KI-2026-005](known-issues/KI-2026-005-mp-playthrough-ingameplay.m
 36. _(done 2026-07-22)_ Mesh V18: adaptive `interpolationDelayMs` from UDP inter-arrival EMA + TCP `latencyMs` (`interp delay auto`); UI Auto Interp Delay (default on); base slider floors the auto target.
 37. _(done 2026-07-22)_ Mesh V19: per-remote adaptive delay — each `Player` tracks `UdpIntervalEmaMs` / `UdpJitterPeakMs` / `InterpDelayMs`; `BuildRenderedPacket` uses peer delay (fallback global). Target ≈ `1.25×peerEma + 0.35×jitterPeak + RTT/2` (clamp 40–200, floored by base). Global UI delay = max(aggregate, peerMax).
 38. _(done 2026-07-22)_ Mesh V20: velocity coast past `ToTime` uses squared fade (cap 200ms); stale-bone settle horizon ≈ `2×UdpIntervalEmaMs` (120–280); asymmetric delay EMA (rise 3/4, fall 5/6).
+39. _(done 2026-07-23)_ Network harden: optional UDP `Seq` trailer (692 B); client 4-slot reorder before From/To; `client.hostPoseTxMaxHz` (default 60, parkour bypass). Server opaque forward `676–692`. No dual push+pull.
+40. _(done 2026-07-23)_ KI-2026-005 playthrough harness: `mp-playthrough-bots` delegates to `mp-real-level-bots` (`START_NEW_GAME` path). LAN soak: `tools/mp-lan-dual-soak.ps1`.
 
 **Not on the roadmap** (2026-07-22 — removed from plan; keep as hard constraints in §9 Do not)
 
@@ -216,6 +218,7 @@ Full history: [KI-2026-005](known-issues/KI-2026-005-mp-playthrough-ingameplay.m
 
 | Date | Note |
 |------|------|
+| 2026-07-23 | UDP Seq (692) + client reorder; hostPoseTxMaxHz; playthrough→real-level; mp-lan-dual-soak |
 | 2026-07-22 | Mesh V20: faded velocity coast; peer-EMA stale-bone horizon; asymmetric adaptive delay EMA |
 | 2026-07-22 | Mesh V19: per-remote adaptive interp delay (UDP EMA + jitter peak); BuildRenderedPacket uses peer delay |
 | 2026-07-22 | Mesh V18: adaptive interp delay (UDP interval + TCP ping); Auto Interp Delay UI |

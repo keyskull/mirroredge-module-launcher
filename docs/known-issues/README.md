@@ -12,7 +12,7 @@
 | [KI-2026-002](KI-2026-002-alt-tab-device-lost.md) | resolved | Module Manager èœå•æ‰“å¼€æ—¶ Alt+Tab å¡æ­» | module_manager |
 | [KI-2026-003](KI-2026-003-chinese-ime-stuck.md) | resolved | æ³¨å…¥åŽä¸­æ–‡ IME å…¨å±€å¤±æ•ˆ | module_manager |
 | [KI-2026-004](KI-2026-004-find-device-proxy-mode.md) | resolved | ä»£ç†æ¨¡å¼ä¸‹ FindDeviceSafe å¯¼è‡´æ¸¸æˆé€€å‡º | module_manager |
-| [KI-2026-005](KI-2026-005-mp-playthrough-ingameplay.md) | open | mp-playthrough-bots æ— æ³•åˆ¤å®šè¿›å…³ / inGameplay | harness / multiplayer |
+| [KI-2026-005](KI-2026-005-mp-playthrough-ingameplay.md) | mitigated | mp-playthrough-bots (delegates to mp-real-level-bots START_NEW_GAME) | harness / multiplayer |
 | [KI-2026-006](KI-2026-006-core-boot-probe-globals.md) | resolved | Core loaded ä½† `init: game not ready yet` æ— é™å¾ªçŽ¯ | sdk / core / borderless |
 | [KI-2026-007](KI-2026-007-ipc-thread-ensure-hooks.md) | resolved | ENSURE_MP_HOOKS åœ¨ IPC çº¿ç¨‹æ‰§è¡Œå¯¼è‡´æ ¸å¿ƒåˆå§‹åŒ–å¤±è´¥ | core / mod_ipc |
 | [KI-2026-008](KI-2026-008-startup-splash-harness-gap.md) | investigating | å¯åŠ¨ splash å¡ä½ä½† harness æœªæ£€æµ‹ | harness / module_manager |
