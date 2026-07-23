@@ -8,6 +8,7 @@ Authoritative version: [`version.json`](version.json) (synced to `shared/product
 
 ## [Unreleased]
 
+- **LAN dual soak** - host client-grace + `lan-soak-host.json`; client waits for server TCP, retries inject, waits for `activation set live`, broader motion pass signals.
 - **sdk-verify CI** — include safe_state class sizes in generate-static-asserts.ps1 so sdk_verify_generated.h stays regeneratable.
 
 ## [1.2.13] - 2026-07-23

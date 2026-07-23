@@ -140,7 +140,8 @@
 | 日期 | 作者 | 说明 |
 |------|------|------|
 | 2026-07-23 | playthrough+LAN | **Test-MmultiplayerPlaythroughWithBots** also delegates to `mp-real-level-bots` (scenario + function). LAN client soak automates inject/`START_NEW_GAME`/`FORCE_HOSTED_LIVE`. motionPass requires `udp seq stream`. |
-| 2026-07-23 | playthrough path | **Harness path fix:** `tools/debug-harness/scenarios/mp-playthrough-bots.ps1` now delegates to `tools/mp-real-level-bots.ps1` (`START_NEW_GAME` → hooks after map → `FORCE_HOSTED_LIVE` → Follow bots). Status → `mitigated`. Two-machine LAN soak script: `tools/mp-lan-dual-soak.ps1` (manual client inject still required). Do not reintroduce Enter-only / pre-level `ENSURE_GAMEPLAY_HOOKS`. |
+| 2026-07-23 | lan-soak harden | Client role: TCP wait before inject, inject retries, require activation set live; host ClientGraceSec + lan-soak-host.json. |
+| 2026-07-23 | playthrough path | **Harness path fix:** `tools/debug-harness/scenarios/mp-playthrough-bots.ps1` now delegates to `tools/mp-real-level-bots.ps1` (`START_NEW_GAME` → hooks after map → `FORCE_HOSTED_LIVE` → Follow bots). Status → `mitigated`. Two-machine LAN soak script: `tools/mp-lan-dual-soak.ps1` (client role auto-injects; waits for host TCP + activation live). Do not reintroduce Enter-only / pre-level `ENSURE_GAMEPLAY_HOOKS`. |
 | 2026-07-19 | visual bots | **Harness PASS (log)**: spawn ok×2 + `set material` + pose after Loading no longer blanks `GetPlayerController(false)`. Bot Follow still starts far from host — near-camera mesh not yet solidly proven in screenshots. |
 | 2026-07-19 | cold warm speedup | Removed `TryFindTdPlayerController` from warm; SEH SuperField IsA; spawn-before-warm. Verified Steam: `queue→spawn ok` ~7s for 2 bots. |
 | 2026-07-19 | host UDP heartbeat | `OnLocalPoseNetworkTick` sends empty packets when live but no pawn so pull-model server relays bot poses. Verified `remote pose applied`×2. |

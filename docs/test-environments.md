@@ -112,12 +112,17 @@ KI 回归（Alt+Tab / IME）：`.\tools\debug-harness\run-ki-regression.ps1` —
 
 Two-machine soak for real peers (heartbeat / level sync). Bots alone do **not** replace this.
 
+**Order:** start **host** first (it prints `PeerIp` and waits `-ClientGraceSec`, default 90s), then start **client** on the peer with that IP.
+
 | Role | Command |
 |------|---------|
 | Host (1号机) | `.\tools\mp-lan-dual-soak.ps1 -Role host -SoakMinutes 15` |
 | Client (2号机) | `.\tools\mp-lan-dual-soak.ps1 -Role client -PeerIp <host-lan-ip> -Room lan-soak -SoakMinutes 15` |
 
-- Host advertises LAN IPv4 via coordination (`obj/harness-coord.json`) and runs `mp-real-level-bots` for the soak window.
-- Client **automates** `Start-SplitInjectionSession` → `START_NEW_GAME` → inject MP (`server=PeerIp`) → `FORCE_HOSTED_LIVE` → soak poll on `client.log` / `GET_STATUS`.
-- Pass criteria: runbook 8 gates on host; client sees `activation set live` and remote pose/bones when peer is up.
+- Host advertises LAN IPv4 via `obj/harness-coord.json` + `obj/lan-soak-host.json` (includes a copy-paste client command), then runs `mp-real-level-bots` for the soak window.
+- Host params: `-ClientGraceSec` (default 90) delay before bots so the peer can launch; lists multiple LAN IPs if present.
+- Client **automates** boot -> `START_NEW_GAME` -> **wait TCP `PeerIp:5222`** -> inject MP (retries) -> `FORCE_HOSTED_LIVE` -> **wait `activation set live`** -> soak poll on `client.log` / `GET_STATUS`.
+- Client params: `-ServerWaitSec` (default 600), `-InjectRetries` (default 3), `-SkipServerWait`, `-AllowNoLive` (debug only), or env `ME_LAN_PEER_IP` instead of `-PeerIp`.
+- Pass criteria: runbook 8 gates on host; client requires `activation set live` (unless `-AllowNoLive`) and remote pose/bones / `udp seq stream` / remotes when soak >= 5 minutes.
 - Interim single-machine gate: `.\tools\mp-real-level-bots.ps1 -BotCount 2 -PlaySeconds 90` (also requires `udp seq stream` for 1.2.11+).
+
