@@ -164,6 +164,12 @@ enum class Str : int {
 	PhysXDownloading,
 	PhysXInstallerLaunched,
 	PhysXDownloadFailedFmt,
+	DownloadProgressPctFmt,
+	DownloadProgressBytesFmt,
+	PatchBusy,
+	PatchWorkerFail,
+	PatchDependenciesDone,
+	PatchDependenciesFailed,
 	Count
 };
 

@@ -8,8 +8,13 @@ Authoritative version: [`version.json`](version.json) (synced to `shared/product
 
 ## [Unreleased]
 
-- **LAN dual soak** - host client-grace + `lan-soak-host.json`; client waits for server TCP, retries inject, waits for `activation set live`, broader motion pass signals.
-- **sdk-verify CI** — include safe_state class sizes in generate-static-asserts.ps1 so sdk_verify_generated.h stays regeneratable.
+## [1.2.14] - 2026-07-24
+
+### Added
+
+- **Launcher Update-tab UX** - Patch / Update modules / Fix PhysX run on a worker thread with busy lock; download progress logs for PhysX installer and GitHub upgrade (`%` / KB).
+- **LAN dual soak harden** (from Unreleased) - host client-grace + `lan-soak-host.json`; client TCP wait, inject retries, activation-live gate.
+- **sdk-verify CI** (from Unreleased) - safe_state class sizes in `generate-static-asserts.ps1`.
 
 ## [1.2.13] - 2026-07-23
 

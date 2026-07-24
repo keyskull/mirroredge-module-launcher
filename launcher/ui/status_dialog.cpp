@@ -60,6 +60,7 @@ enum : UINT {
 	kMarkFinished = WM_APP + 3,
 	kAppendModLog = WM_APP + 4,
 	kUpdateCheckDone = WM_APP + 6,
+	kPatchDone = WM_APP + 7,
 	kConfigSyncTimerId = 0xC501,
 };
 
@@ -104,6 +105,7 @@ bool g_finished = false;
 bool g_success = false;
 std::atomic<bool> g_exitRequested{false};
 std::atomic<bool> g_updateBusy{false};
+std::atomic<bool> g_patchBusy{false};
 StatusDialog::LaunchGameCallback g_launchHandler = nullptr;
 StatusDialog::CloseGameCallback g_closeGameHandler = nullptr;
 std::mutex g_pendingMutex;
@@ -175,6 +177,91 @@ struct UpdateCheckResultPayload {
 	UpdateCheck::ReleaseInfo info;
 	bool manual = false;
 };
+
+
+void SetPatchUiBusy(bool busy) {
+	const BOOL enable = busy ? FALSE : TRUE;
+	if (g_detectModules) {
+		EnableWindow(g_detectModules, enable);
+	}
+	if (g_updateModules) {
+		EnableWindow(g_updateModules, enable);
+	}
+	if (g_patchDependencies) {
+		EnableWindow(g_patchDependencies, enable);
+	}
+	if (g_fixPhysX) {
+		EnableWindow(g_fixPhysX, enable);
+	}
+}
+
+void LogUiDownloadProgress(unsigned long long downloaded, unsigned long long total,
+                           void *) {
+	if (total > 0) {
+		const unsigned pct =
+		    static_cast<unsigned>((downloaded * 100ULL) / total);
+		StatusDialog::AppendLogf(
+		    LauncherI18n::T(LauncherI18n::Str::DownloadProgressPctFmt), pct,
+		    downloaded / 1024ULL, total / 1024ULL);
+	} else {
+		StatusDialog::AppendLogf(
+		    LauncherI18n::T(LauncherI18n::Str::DownloadProgressBytesFmt),
+		    downloaded / 1024ULL);
+	}
+}
+
+enum class PatchAction : int {
+	UpdateModules = 1,
+	PatchDependencies = 2,
+	FixPhysX = 3,
+};
+
+DWORD WINAPI PatchWorker(LPVOID param) {
+	const auto action = static_cast<PatchAction>(reinterpret_cast<INT_PTR>(param));
+	bool ok = false;
+	switch (action) {
+	case PatchAction::UpdateModules: {
+		std::wstring gameRoot;
+		if (Paths::GetGameRootDirectory(gameRoot)) {
+			ok = GamePatch::PatchModulesToGame(gameRoot);
+		} else {
+			StatusDialog::AppendLog(
+			    LauncherI18n::T(LauncherI18n::Str::ModulesNoGame));
+		}
+		break;
+	}
+	case PatchAction::PatchDependencies:
+		ok = GamePatch::PatchDependenciesToGame();
+		break;
+	case PatchAction::FixPhysX:
+		ok = GamePatch::PatchPhysXToGame();
+		break;
+	}
+	if (g_window) {
+		PostMessageW(g_window, kPatchDone, ok ? 1 : 0, 0);
+	} else {
+		g_patchBusy = false;
+	}
+	return ok ? 0 : 1;
+}
+
+void BeginPatchAction(PatchAction action) {
+	if (g_patchBusy.exchange(true)) {
+		AppendLogLine(LauncherI18n::T(LauncherI18n::Str::PatchBusy));
+		return;
+	}
+	SetPatchUiBusy(true);
+	HANDLE thread = CreateThread(
+	    nullptr, 0, PatchWorker,
+	    reinterpret_cast<LPVOID>(static_cast<INT_PTR>(action)), 0, nullptr);
+	if (!thread) {
+		g_patchBusy = false;
+		SetPatchUiBusy(false);
+		AppendLogLine(LauncherI18n::T(LauncherI18n::Str::PatchWorkerFail));
+		return;
+	}
+	CloseHandle(thread);
+}
 
 void SetUpdateUiIdle() {
 	if (g_checkUpdate) {
@@ -352,8 +439,8 @@ DWORD WINAPI UpgradeWorker(LPVOID) {
 	StatusDialog::AppendLog(
 	    LauncherI18n::T(LauncherI18n::Str::DownloadingRelease));
 	std::wstring err;
-	if (!UpdateCheck::DownloadFile(g_latestRelease.downloadUrl, zipFile,
-	                               &err)) {
+	if (!UpdateCheck::DownloadFile(g_latestRelease.downloadUrl, zipFile, &err,
+	                               LogUiDownloadProgress, nullptr)) {
 		StatusDialog::AppendLog((std::wstring(LauncherI18n::T(LauncherI18n::Str::DownloadFailedPrefix)) + err).c_str());
 		g_updateBusy = false;
 		PostMessageW(g_window, kUpdateCheckDone, 1, 0);
@@ -1066,6 +1153,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam,
 		}
 		return 0;
 	}
+	case kPatchDone: {
+		g_patchBusy = false;
+		SetPatchUiBusy(false);
+		if (wparam != 0) {
+			RefreshModulesSyncStatus(true);
+			RefreshConfigSyncStatus();
+		}
+		return 0;
+	}
 	case InputRestore::kRestoreInputMessage: {
 		InputRestore::ScheduleRestoreBurst(hwnd);
 		return 0;
@@ -1164,26 +1260,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam,
 			return 0;
 		}
 		if (LOWORD(wparam) == kUpdateModules) {
-			std::wstring gameRoot;
-			if (!Paths::GetGameRootDirectory(gameRoot)) {
-				AppendLogLine(LauncherI18n::T(LauncherI18n::Str::ModulesNoGame));
-				return 0;
-			}
-			if (GamePatch::PatchModulesToGame(gameRoot)) {
-				RefreshModulesSyncStatus(true);
-				RefreshConfigSyncStatus();
-			}
+			BeginPatchAction(PatchAction::UpdateModules);
 			return 0;
 		}
 		if (LOWORD(wparam) == kPatchDependencies) {
-			if (GamePatch::PatchDependenciesToGame()) {
-				RefreshModulesSyncStatus(true);
-				RefreshConfigSyncStatus();
-			}
+			BeginPatchAction(PatchAction::PatchDependencies);
 			return 0;
 		}
 		if (LOWORD(wparam) == kFixPhysX) {
-			GamePatch::PatchPhysXToGame();
+			BeginPatchAction(PatchAction::FixPhysX);
 			return 0;
 		}
 		if (LOWORD(wparam) == kLanguage && HIWORD(wparam) == CBN_SELCHANGE) {

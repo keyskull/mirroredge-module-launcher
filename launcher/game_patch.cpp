@@ -494,6 +494,22 @@ bool ResolvePhysXSource(std::wstring &directory, std::wstring &sourceLabel) {
 	return false;
 }
 
+void LogDownloadProgress(unsigned long long downloaded,
+                         unsigned long long total, void *) {
+	if (total > 0) {
+		const unsigned pct =
+		    static_cast<unsigned>((downloaded * 100ULL) / total);
+		StatusDialog::AppendLogf(
+		    LauncherI18n::T(LauncherI18n::Str::DownloadProgressPctFmt), pct,
+		    static_cast<unsigned long long>(downloaded / 1024ULL),
+		    static_cast<unsigned long long>(total / 1024ULL));
+	} else {
+		StatusDialog::AppendLogf(
+		    LauncherI18n::T(LauncherI18n::Str::DownloadProgressBytesFmt),
+		    static_cast<unsigned long long>(downloaded / 1024ULL));
+	}
+}
+
 bool OfferOfficialPhysXDownload() {
 	StatusDialog::AppendLog(
 	    LauncherI18n::T(LauncherI18n::Str::PhysXDownloading));
@@ -508,7 +524,8 @@ bool OfferOfficialPhysXDownload() {
 
 	const std::wstring dest = std::wstring(tempPath) + kPhysXInstallerName;
 	std::wstring error;
-	if (!UpdateCheck::DownloadFile(kPhysXInstallerUrl, dest, &error)) {
+	if (!UpdateCheck::DownloadFile(kPhysXInstallerUrl, dest, &error,
+	                               LogDownloadProgress, nullptr)) {
 		StatusDialog::AppendLogf(
 		    LauncherI18n::T(LauncherI18n::Str::PhysXDownloadFailedFmt),
 		    error.empty() ? L"download failed" : error.c_str());
@@ -735,7 +752,10 @@ bool PatchDependenciesToGame() {
 	    LauncherI18n::T(LauncherI18n::Str::PatchingDependencies));
 	const bool modulesOk = PatchModulesToGame(gameRoot);
 	const bool proxyOk = PatchGraphicsProxy(gameBinaries);
-	return modulesOk && proxyOk;
+	const bool ok = modulesOk && proxyOk;
+	StatusDialog::AppendLog(ok ? LauncherI18n::T(LauncherI18n::Str::PatchDependenciesDone)
+	                           : LauncherI18n::T(LauncherI18n::Str::PatchDependenciesFailed));
+	return ok;
 }
 
 bool PatchPhysXToGame() {
